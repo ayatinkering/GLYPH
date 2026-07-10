@@ -116,8 +116,21 @@ export default function CommitPage() {
       activeHistory.entropy
     );
     const geomState = geom.getGeometryState(activeFootfalls, walkStore.rotation);
-    return ExportEngine.generateSVG(geomState, activePalette);
-  }, [activeSeed, activeFootfalls, walkStore.rotation, activeHistory, activePalette]);
+    const formattedDuration = `${Math.max(1, Math.round(activeDuration / 60))} min`;
+    const formattedDistance = `${(activeFootfalls * 0.00075).toFixed(1)} km`;
+    const pointsCount = Math.min(987, activeFootfalls * 8 + 34);
+
+    return ExportEngine.generateSVG(geomState, activePalette, {
+      title: activeSolarPeriod === "goldenhour" ? "Golden Hour Walk" : activeSolarPeriod === "bluehour" ? "Blue Hour Walk" : activeSolarPeriod === "night" ? "Night Walk" : "Morning Walk",
+      date: activeDate,
+      footfalls: activeFootfalls,
+      duration: formattedDuration,
+      distance: formattedDistance,
+      arms: geom.getSymmetryArms(activeFootfalls),
+      points: pointsCount,
+      commitNumber: specimenNumber,
+    });
+  }, [activeSeed, activeFootfalls, walkStore.rotation, activeHistory, activePalette, activeDuration, activeSolarPeriod, activeDate, specimenNumber]);
 
   // Trigger SVG to PNG conversion and download
   const handleDownloadPNG = () => {
@@ -133,10 +146,10 @@ export default function CommitPage() {
     const url = URL.createObjectURL(blob);
 
     img.onload = () => {
-      canvas.width = 600;
-      canvas.height = 600;
+      canvas.width = 750;
+      canvas.height = 1200;
       if (ctx) {
-        ctx.drawImage(img, 0, 0, 600, 600);
+        ctx.drawImage(img, 0, 0, 750, 1200);
       }
       
       ExportEngine.downloadPNGFile(canvas, `mandala_commit_${formattedCommitNum()}`);
@@ -158,11 +171,25 @@ export default function CommitPage() {
     );
 
     const geomState = geom.getGeometryState(activeFootfalls, walkStore.rotation);
+    const formattedDuration = `${Math.max(1, Math.round(activeDuration / 60))} min`;
+    const formattedDistance = `${(activeFootfalls * 0.00075).toFixed(1)} km`;
+    const pointsCount = Math.min(987, activeFootfalls * 8 + 34);
+
     if (activePalette) {
       ExportEngine.downloadSVGFile(
         geomState,
         activePalette,
-        `mandala_commit_${formattedCommitNum()}`
+        `mandala_commit_${formattedCommitNum()}`,
+        {
+          title: activeSolarPeriod === "goldenhour" ? "Golden Hour Walk" : activeSolarPeriod === "bluehour" ? "Blue Hour Walk" : activeSolarPeriod === "night" ? "Night Walk" : "Morning Walk",
+          date: activeDate,
+          footfalls: activeFootfalls,
+          duration: formattedDuration,
+          distance: formattedDistance,
+          arms: geom.getSymmetryArms(activeFootfalls),
+          points: pointsCount,
+          commitNumber: specimenNumber,
+        }
       );
     }
   };

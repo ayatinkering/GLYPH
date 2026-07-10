@@ -477,7 +477,7 @@ export function FeetSimulator() {
           style={{
             position: "absolute",
             top: 22,
-            right: 80,
+            right: 24,
             fontFamily: "var(--font-lastik), Lastik, Lastic, serif",
             fontSize: 9,
             color: TEXT_SECONDARY,
