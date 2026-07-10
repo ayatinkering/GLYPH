@@ -933,7 +933,7 @@ The interface itself should become part of the identity.
 
 ---
 
-# Claude Design Rules
+# Codex Design Rules
 
 If a design decision is unclear:
 

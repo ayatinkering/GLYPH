@@ -383,7 +383,7 @@ This Product Bible is divided into the following documents.
 
 07_UI_UX_Specification.md
 
-08_Claude_Build_Guide.md
+08_Codex_Build_Guide.md
 
 09_Demo_and_Submission.md
 ```

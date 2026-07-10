@@ -1,12 +1,12 @@
 
 
-# GLYPH — Antigravity Build Guide
+# GLYPH — Antgravity / Codex Build Guide
 
-> Internal Engineering Guide for Claude Code / Antigravity
+> Internal Engineering Guide for Codex
 
 ## Purpose
 
-This document defines how Antigravity should build GLYPH. It complements the Product Bible present in /home/ayati/Documents/Github Repos/GLYPH/docs , and acts as the engineering constitution for implementation.
+This document defines how Codex should build GLYPH. It complements the Product Bible present in /home/ayati/Documents/Github Repos/GLYPH/docs , and acts as the engineering constitution for implementation.
 
 ## Mission
 

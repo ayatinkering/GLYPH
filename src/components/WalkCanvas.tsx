@@ -27,6 +27,9 @@ export function WalkCanvas({
     const P5 = p5Lib.default || p5Lib;
     let p5Instance: any = null;
 
+    const PHI = (1 + Math.sqrt(5)) / 2;
+    const GOLDEN_ANGLE = 2 * Math.PI * (2 - PHI);
+
     const sketch = (p: any) => {
       let currentRotation = rotation;
 
@@ -39,88 +42,172 @@ export function WalkCanvas({
       };
 
       p.draw = () => {
-        // Clear background with soft paper ivory
+        // Clear background with soft astronomical paper background
         p.background(palette.background);
 
         const cx = p.width / 2;
         const cy = p.height / 2;
+        const R = Math.min(p.width, p.height) * 0.40;
 
-        // Faint coordinates guidelines
-        p.noFill();
-        p.stroke(232, 232, 230);
-        p.strokeWeight(1);
-        p.line(0, cy, p.width, cy);
-        p.line(cx, 0, cx, p.height);
-
-        // Concentric orbits
-        p.circle(cx, cy, p.width * 0.2);
-        p.circle(cx, cy, p.width * 0.4);
-        p.circle(cx, cy, p.width * 0.6);
-
-        // Smoothly interpolate rotation to prevent jerking
+        // Smoothly interpolate rotation to prevent sudden jerking
         currentRotation = p.lerp(currentRotation, rotation, 0.05);
 
-        // Get geometry parameters
-        const geomState = geometryEngine.getGeometryState(footfalls, currentRotation);
-        const S = geomState.arms;
-        const points = geomState.points;
-
-        if (points.length === 0) {
-          // Draw a small starting point
-          p.fill(palette.accent);
-          p.noStroke();
-          p.circle(cx, cy, 6);
-          return;
-        }
-
-        // Apply native canvas shadows to simulate a premium glowing aura/fog
+        // Apply native canvas shadows to simulate a premium glowing aura
         const ctx = p.drawingContext;
-        ctx.shadowBlur = 12;
+        ctx.shadowBlur = 10;
         ctx.shadowColor = palette.accent;
 
         p.push();
         p.translate(cx, cy);
         p.rotate(currentRotation);
 
-        // 1. Draw Symmetry arms
-        for (let s = 0; s < S; s++) {
-          p.push();
-          p.rotate((s * 2 * Math.PI) / S);
-
-          // Draw connecting paths (gait curves)
-          p.noFill();
-          p.stroke(palette.accent + "22"); // Very faint connection lines
-          p.strokeWeight(1.5);
-          
-          p.beginShape();
-          for (let i = 0; i < points.length; i++) {
-            const pt = points[i];
-            const curveX = pt.x + Math.sin(pt.index) * pt.smoothnessOffset;
-            const curveY = pt.y + Math.cos(pt.index) * pt.smoothnessOffset;
-            p.vertex(curveX, curveY);
-          }
-          p.endShape();
-
-          // Draw nodes
-          for (let i = 0; i < points.length; i++) {
-            const pt = points[i];
-            
-            // Highlight the most recent nodes with a larger bloom
-            const isRecent = i >= points.length - 3;
-            const size = isRecent ? pt.weight * 2.2 : pt.weight * 1.5;
-            
-            p.fill(isRecent ? palette.accent : palette.accent + "DD");
-            p.noStroke();
-            p.circle(pt.x, pt.y, size);
-          }
-
-          p.pop();
+        // ── 1. Radial guide lines (24 guidelines) ────────────────────────────
+        p.noFill();
+        p.stroke(palette.secondary + "1A"); // Faint secondary color
+        p.strokeWeight(0.5);
+        for (let i = 0; i < 24; i++) {
+          const a = (i / 24) * Math.PI * 2;
+          p.line(0, 0, R * 1.16 * Math.cos(a), R * 1.16 * Math.sin(a));
         }
 
-        p.pop();
+        // ── 2. Outer boundary circle ───────────────────────────────────────
+        p.stroke(palette.secondary + "22");
+        p.strokeWeight(0.6);
+        p.circle(0, 0, R * 2.18);
 
-        // Remove shadow state for UI elements overlay if any
-        ctx.shadowBlur = 0;
+        // ── 3. Instrument tick marks (72 ticks) ─────────────────────────────
+        for (let i = 0; i < 72; i++) {
+          const a = (i / 72) * Math.PI * 2;
+          const major = i % 6 === 0;
+          const semi = i % 3 === 0;
+          const r1 = R * (major ? 1.0 : semi ? 1.035 : 1.065);
+          
+          p.stroke(palette.secondary + (major ? "77" : semi ? "33" : "15"));
+          p.strokeWeight(major ? 0.95 : semi ? 0.6 : 0.35);
+          p.line(r1 * Math.cos(a), r1 * Math.sin(a), R * 1.1 * Math.cos(a), R * 1.1 * Math.sin(a));
+        }
+
+        // ── 4. Golden-ratio concentric circles (8 circles) ──────────────────
+        // Only render concentric rings matching step progression
+        const concentricReveal = p.constrain(footfalls / 10, 2, 8);
+        for (let i = 0; i <= concentricReveal; i++) {
+          const r = R * Math.pow(1 / PHI, i);
+          p.stroke(palette.accent + "33");
+          p.strokeWeight(0.42);
+          p.circle(0, 0, r * 2);
+        }
+
+        // ── Helper: polar rose r = cos(k·θ) ──────────────────────────────────
+        const drawRose = (
+          maxR: number,
+          k: number,
+          rotations: number,
+          steps: number,
+          color: string,
+          lw: number
+        ) => {
+          const total = Math.PI * 2 * rotations;
+          p.noFill();
+          p.stroke(color);
+          p.strokeWeight(lw);
+          p.beginShape();
+          for (let i = 0; i <= steps; i++) {
+            const t = (i / steps) * total;
+            const r = maxR * Math.cos(k * t);
+            const x = r * Math.cos(t);
+            const y = r * Math.sin(t);
+            p.vertex(x, y);
+          }
+          p.endShape();
+        };
+
+        // ── 5. Polar rose layers (Revealed as step count increases) ──────────
+        // Scale curves slightly based on footfalls to show dynamic growth
+        const scaleFactor = p.constrain(footfalls / 80, 0.25, 1.0);
+        
+        if (footfalls >= 2) {
+          drawRose(R * 0.17 * scaleFactor, 2, 1, 300, palette.accent + "D5", 0.7);
+        }
+        if (footfalls >= 8) {
+          drawRose(R * 0.30 * scaleFactor, 3, 1, 500, palette.accent + "BB", 0.62);
+        }
+        if (footfalls >= 16) {
+          drawRose(R * 0.465 * scaleFactor, 5, 1, 600, palette.accent + "99", 0.55);
+        }
+        if (footfalls >= 24) {
+          drawRose(R * 0.62 * scaleFactor, 3/2, 2, 1000, palette.secondary + "80", 0.5);
+        }
+        if (footfalls >= 40) {
+          drawRose(R * 0.755 * scaleFactor, 5/3, 3, 1200, palette.secondary + "55", 0.48);
+        }
+        if (footfalls >= 60) {
+          drawRose(R * 0.875 * scaleFactor, 7/4, 4, 1500, palette.accent + "44", 0.45);
+        }
+        if (footfalls >= 80) {
+          drawRose(R * scaleFactor, 13/6, 6, 2000, palette.accent + "33", 0.42);
+        }
+
+        // ── 6. Spirographs (Epitrochoid & Hypocycloid) ──────────────────────
+        const drawEpitrochoid = (
+          Rr: number,
+          rr: number,
+          d: number,
+          steps: number,
+          color: string,
+          lw: number
+        ) => {
+          const revs = Math.round(Rr / rr);
+          const total = Math.PI * 2 * revs;
+          p.noFill();
+          p.stroke(color);
+          p.strokeWeight(lw);
+          p.beginShape();
+          for (let i = 0; i <= steps; i++) {
+            const t = (i / steps) * total;
+            const x = (Rr + rr) * Math.cos(t) - d * Math.cos(((Rr + rr) / rr) * t);
+            const y = (Rr + rr) * Math.sin(t) - d * Math.sin(((Rr + rr) / rr) * t);
+            p.vertex(x, y);
+          }
+          p.endShape();
+        };
+
+        if (footfalls >= 35) {
+          drawEpitrochoid(
+            R * 0.68, R * 0.68 / 6, R * 0.68 / 6 * 1.12,
+            1200, palette.accent + "26", 0.4
+          );
+        }
+
+        // ── 7. Fibonacci phyllotaxis constellation (Grows step-by-step) ─────
+        // Plot dots as they walk
+        const dotsCount = p.constrain(footfalls * 2, 0, 233);
+        const dotR = R * 0.35;
+        p.noStroke();
+        for (let i = 0; i < dotsCount; i++) {
+          const r = dotR * Math.sqrt(i / 233);
+          const theta = i * GOLDEN_ANGLE;
+          const x = r * Math.cos(theta);
+          const y = r * Math.sin(theta);
+          const t = i / 233;
+          
+          p.fill(palette.accent + (i === dotsCount - 1 ? "EE" : "55"));
+          p.circle(x, y, 0.8 + t * 1.2);
+        }
+
+        // ── 8. Centre ornamental rings ─────────────────────────────────────
+        p.noFill();
+        p.stroke(palette.accent + "77");
+        p.strokeWeight(0.5);
+        p.circle(0, 0, 24);
+        p.circle(0, 0, 16);
+        p.circle(0, 0, 10);
+        
+        p.fill(palette.secondary);
+        p.noStroke();
+        p.circle(0, 0, 5);
+
+        p.pop();
+        ctx.shadowBlur = 0; // Reset shadows
       };
 
       p.windowResized = () => {

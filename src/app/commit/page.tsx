@@ -30,6 +30,22 @@ export default function CommitPage() {
 
   const formattedDate = useMemoDate();
 
+  // Re-generate SVG in memory for hidden tag download hooks
+  const svgString = useMemo(() => {
+    if (!walkStore.skyState) return "";
+    const geom = new GeometryEngine();
+    geom.setSeed(seedHash);
+    geom.rebuildFromHistory(
+      walkStore.footfalls,
+      walkStore.history.cadence,
+      walkStore.history.acceleration,
+      walkStore.history.smoothness,
+      walkStore.history.entropy
+    );
+    const geomState = geom.getGeometryState(walkStore.footfalls, walkStore.rotation);
+    return ExportEngine.generateSVG(geomState, walkStore.skyState.palette);
+  }, [seedHash, walkStore.footfalls, walkStore.rotation, walkStore.history, walkStore.skyState]);
+
   // Trigger SVG to PNG conversion and download
   const handleDownloadPNG = () => {
     const svgElement = document.querySelector("svg");
@@ -203,6 +219,7 @@ export default function CommitPage() {
               date={formattedDate}
               palette={walkStore.skyState.palette}
               history={walkStore.history}
+              duration={walkStore.duration}
             />
           )}
         </motion.div>
@@ -279,6 +296,9 @@ export default function CommitPage() {
           </div>
         </motion.div>
       </main>
+      
+      {/* Hidden SVG container to enable SVG/PNG downloads of the specimen */}
+      <div style={{ display: "none" }} dangerouslySetInnerHTML={{ __html: svgString }} />
     </div>
   );
 }
