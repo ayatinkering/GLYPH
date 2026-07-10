@@ -36,9 +36,7 @@ export function Header({ userSession }: HeaderProps) {
     <>
       <header className="fixed top-6 left-0 right-0 z-50 flex justify-center px-4 transition-all duration-300">
         <nav
-          className={`flex items-center justify-between w-full max-w-2xl h-14 px-8 rounded-full border border-border-subtle bg-white/45 text-text-primary shadow-[0_4px_24px_rgba(0,0,0,0.02)] backdrop-blur-lg transition-all duration-300 ${
-            scrolled ? "max-w-xl h-12 px-6" : ""
-          }`}
+          className="flex items-center justify-between w-full max-w-2xl h-14 px-8 rounded-full border border-border-subtle bg-white/45 text-text-primary shadow-[0_4px_24px_rgba(0,0,0,0.02)] backdrop-blur-lg transition-all duration-300"
         >
           {/* Left: Logo & Wordmark */}
           <Link href="/" className="flex items-center gap-2 group">
