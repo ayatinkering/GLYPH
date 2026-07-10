@@ -136,7 +136,7 @@ export default function Home() {
                 <div className={`overflow-hidden transition-all duration-500 ease-in-out ${
                   hoveredCard === 0 ? "max-h-40 opacity-100 mt-2" : "max-h-0 opacity-0"
                 }`}>
-                  <p className="text-sm sm:text-base text-neutral-200 font-serif leading-relaxed">
+                  <p className="text-sm sm:text-base text-white font-serif leading-relaxed">
                     GLYPH processes motion accelerometer data using a low-pass butterworth filter. Stride interval peaks compile your real-time Cadence (BPM), while variance in gait regularity measures gait entropy.
                   </p>
                 </div>
@@ -163,7 +163,7 @@ export default function Home() {
                 <div className={`overflow-hidden transition-all duration-500 ease-in-out ${
                   hoveredCard === 1 ? "max-h-40 opacity-100 mt-2" : "max-h-0 opacity-0"
                 }`}>
-                  <p className="text-sm sm:text-base text-neutral-200 font-serif leading-relaxed">
+                  <p className="text-sm sm:text-base text-white font-serif leading-relaxed">
                     Astronomical coordinates calculate the sun's elevation relative to your horizon. Walks at Golden Hour trigger warm sunflower palettes; Blue Hour transitions into indigo violet; night walks render deep midnight blues.
                   </p>
                 </div>
@@ -190,7 +190,7 @@ export default function Home() {
                 <div className={`overflow-hidden transition-all duration-500 ease-in-out ${
                   hoveredCard === 2 ? "max-h-40 opacity-100 mt-2" : "max-h-0 opacity-0"
                 }`}>
-                  <p className="text-sm sm:text-base text-neutral-200 font-serif leading-relaxed">
+                  <p className="text-sm sm:text-base text-white font-serif leading-relaxed">
                     Impulses route through golden spiral formulas: r = c * √n and θ = n * 137.508°. As step counts hit Fibonacci milestones, the engine replicates arms into symmetric mandala patterns.
                   </p>
                 </div>
@@ -204,10 +204,10 @@ export default function Home() {
 
       {/* SECTION 3: MOCKUP 3 INTERACTIVE SANDBOX */}
       <section id="playground" className="relative py-24 px-6 border-t border-border-subtle/50 bg-canvas overflow-hidden">
-        <div className="max-w-5xl mx-auto flex flex-col items-center">
+        <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-12 items-center">
           
-          {/* Typographic lockup inspired by Mockup 3 */}
-          <div className="text-center max-w-xl mb-12">
+          {/* Typographic lockup inspired by Mockup 3 (Left Column) */}
+          <div className="md:col-span-6 text-left">
             <h2 className="font-serif font-normal text-4xl sm:text-5xl text-text-primary mb-4 leading-tight">
               Seamless Walk Simulation, <br />
               <span className="font-serif font-normal">procedural mandalas</span>
@@ -217,8 +217,8 @@ export default function Home() {
             </p>
           </div>
 
-          {/* Minimalist Sandbox Panel Card */}
-          <div className="w-full flex justify-center relative z-10">
+          {/* Minimalist Sandbox Panel Card (Right Column) */}
+          <div className="md:col-span-6 w-full flex justify-center md:justify-end relative z-10">
             <FeetSimulator />
           </div>
 
