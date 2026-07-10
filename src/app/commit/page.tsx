@@ -6,18 +6,15 @@ import { useWalkStore } from "@/stores/useWalkStore";
 import { CommitCard } from "@/components/CommitCard";
 import { ExportEngine } from "@/engine/export/ExportEngine";
 import { GeometryEngine } from "@/engine/geometry/GeometryEngine";
-import { githubCommit } from "@/app/actions/githubCommit";
 import { Header } from "@/components/Header";
 import { motion } from "framer-motion";
-import { Download, Check, ArrowLeft, RefreshCw, FileCode, ImageIcon, EyeOff } from "lucide-react";
+import { Download, Check, ArrowLeft, RefreshCw, FileCode, ImageIcon, EyeOff, Share2 } from "lucide-react";
 import Link from "next/link";
 
 export default function CommitPage() {
   const router = useRouter();
   const walkStore = useWalkStore();
   
-  const [isCommitting, setIsCommitting] = useState(false);
-  const [isCommitted, setIsCommitted] = useState(false);
   const [specimenNumber] = useState(() => Math.floor(Math.random() * 800) + 1); // Mock counter for Hackathon
   const [seedHash] = useState(() => {
     return walkStore.lat && walkStore.lng
@@ -25,39 +22,114 @@ export default function CommitPage() {
       : "GLYPH_SEED_" + Date.now();
   });
 
-  // Safe redirect if direct navigation occurred without walking
-  const hasWalkData = walkStore.footfalls > 0;
+  const [showShareOptions, setShowShareOptions] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  // State to load link-serialized shared walks
+  const [sharedData, setSharedData] = useState<{
+    seed: string;
+    footfalls: number;
+    cadence: number;
+    smoothness: number;
+    entropy: number;
+    solarPeriod: string;
+    duration: number;
+    date: string;
+  } | null>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const seed = params.get("seed");
+    const steps = params.get("steps");
+    if (seed && steps) {
+      setSharedData({
+        seed,
+        footfalls: parseInt(steps) || 0,
+        cadence: parseInt(params.get("cadence") || "0") || 0,
+        smoothness: parseFloat(params.get("smoothness") || "1.0") || 1.0,
+        entropy: parseFloat(params.get("entropy") || "0.0") || 0.0,
+        solarPeriod: params.get("solarPeriod") || "day",
+        duration: parseInt(params.get("duration") || "0") || 0,
+        date: params.get("date") || new Date().toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+      });
+    }
+  }, []);
+
+  // Safe redirect if direct navigation occurred without walking or loading a shared card
+  const hasWalkData = walkStore.footfalls > 0 || sharedData !== null;
 
   const formattedDate = useMemoDate();
 
+  // Dynamic values mapped from either active walk store or shared query params
+  const activeSeed = sharedData?.seed || seedHash;
+  const activeFootfalls = sharedData?.footfalls || walkStore.footfalls;
+  const activeCadence = sharedData?.cadence || walkStore.cadence;
+  const activeSmoothness = sharedData?.smoothness || walkStore.smoothness;
+  const activeEntropy = sharedData?.entropy || walkStore.entropy;
+  const activeSolarPeriod = sharedData?.solarPeriod || (walkStore.skyState?.solarPeriod || "day");
+  const activeMoonPhase = sharedData ? 0.5 : (walkStore.skyState?.moonPhase || 0.5);
+  const activeDate = sharedData?.date || formattedDate;
+  
+  const activePalette = useMemo(() => {
+    if (sharedData) {
+      switch (sharedData.solarPeriod.toLowerCase()) {
+        case "goldenhour":
+          return { name: "Golden Hour Specimen", accent: "#D4A937", secondary: "#8A8A8A", background: "#FAFAF8", ambientGlow: "rgba(212, 169, 55, 0.08)" };
+        case "bluehour":
+          return { name: "Blue Hour Specimen", accent: "#7764D8", secondary: "#36543B", background: "#F5F7FA", ambientGlow: "rgba(119, 100, 216, 0.08)" };
+        case "night":
+          return { name: "Midnight Specimen", accent: "#1A2E40", secondary: "#7764D8", background: "#F2F4F7", ambientGlow: "rgba(26, 46, 64, 0.08)" };
+        case "day":
+        default:
+          return { name: "Diurnal Specimen", accent: "#36543B", secondary: "#D4A937", background: "#FAFAF8", ambientGlow: "rgba(54, 84, 59, 0.06)" };
+      }
+    }
+    return walkStore.skyState?.palette;
+  }, [sharedData, walkStore.skyState]);
+
+  const activeDuration = sharedData?.duration || walkStore.duration;
+  
+  const activeHistory = useMemo(() => {
+    if (sharedData) {
+      return { cadence: [], acceleration: [], smoothness: [], entropy: [], rotation: [] };
+    }
+    return walkStore.history;
+  }, [sharedData, walkStore.history]);
+
   // Re-generate SVG in memory for hidden tag download hooks
   const svgString = useMemo(() => {
-    if (!walkStore.skyState) return "";
+    if (!activePalette) return "";
     const geom = new GeometryEngine();
-    geom.setSeed(seedHash);
+    geom.setSeed(activeSeed);
     geom.rebuildFromHistory(
-      walkStore.footfalls,
-      walkStore.history.cadence,
-      walkStore.history.acceleration,
-      walkStore.history.smoothness,
-      walkStore.history.entropy
+      activeFootfalls,
+      activeHistory.cadence,
+      activeHistory.acceleration,
+      activeHistory.smoothness,
+      activeHistory.entropy
     );
-    const geomState = geom.getGeometryState(walkStore.footfalls, walkStore.rotation);
-    return ExportEngine.generateSVG(geomState, walkStore.skyState.palette);
-  }, [seedHash, walkStore.footfalls, walkStore.rotation, walkStore.history, walkStore.skyState]);
+    const geomState = geom.getGeometryState(activeFootfalls, walkStore.rotation);
+    return ExportEngine.generateSVG(geomState, activePalette);
+  }, [activeSeed, activeFootfalls, walkStore.rotation, activeHistory, activePalette]);
 
   // Trigger SVG to PNG conversion and download
   const handleDownloadPNG = () => {
-    const svgElement = document.querySelector("svg");
+    const svgElement = document.querySelector("#hidden-svg-holder svg");
     if (!svgElement) return;
 
-    const svgString = new XMLSerializer().serializeToString(svgElement);
+    const svgStringContent = new XMLSerializer().serializeToString(svgElement);
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
     const img = new Image();
     
-    // Set blob properties
-    const blob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
+    const blob = new Blob([svgStringContent], { type: "image/svg+xml;charset=utf-8" });
     const url = URL.createObjectURL(blob);
 
     img.onload = () => {
@@ -75,21 +147,21 @@ export default function CommitPage() {
 
   const handleDownloadSVG = () => {
     const geom = new GeometryEngine();
-    geom.setSeed(seedHash);
+    geom.setSeed(activeSeed);
     
     geom.rebuildFromHistory(
-      walkStore.footfalls,
-      walkStore.history.cadence,
-      walkStore.history.acceleration,
-      walkStore.history.smoothness,
-      walkStore.history.entropy
+      activeFootfalls,
+      activeHistory.cadence,
+      activeHistory.acceleration,
+      activeHistory.smoothness,
+      activeHistory.entropy
     );
 
-    const geomState = geom.getGeometryState(walkStore.footfalls, walkStore.rotation);
-    if (walkStore.skyState) {
+    const geomState = geom.getGeometryState(activeFootfalls, walkStore.rotation);
+    if (activePalette) {
       ExportEngine.downloadSVGFile(
         geomState,
-        walkStore.skyState.palette,
+        activePalette,
         `mandala_commit_${formattedCommitNum()}`
       );
     }
@@ -98,14 +170,18 @@ export default function CommitPage() {
   const handleDownloadJSON = () => {
     const walkDNAData = {
       commitNumber: specimenNumber,
-      seed: seedHash,
-      date: formattedDate,
-      footfalls: walkStore.footfalls,
-      cadenceBpm: walkStore.cadence,
-      smoothness: walkStore.smoothness,
-      entropy: walkStore.entropy,
-      sky: walkStore.skyState,
-      history: walkStore.history,
+      seed: activeSeed,
+      date: activeDate,
+      footfalls: activeFootfalls,
+      cadenceBpm: activeCadence,
+      smoothness: activeSmoothness,
+      entropy: activeEntropy,
+      sky: {
+        solarPeriod: activeSolarPeriod,
+        moonPhase: activeMoonPhase,
+        palette: activePalette,
+      },
+      duration: activeDuration,
       version: "v1.0"
     };
 
@@ -115,56 +191,12 @@ export default function CommitPage() {
     );
   };
 
-  // Real server action trigger for GitHub repository push
-  const handleGitHubCommit = async () => {
-    setIsCommitting(true);
-    
-    // Reconstruct geometry and SVG content to push
-    const geom = new GeometryEngine();
-    geom.setSeed(seedHash);
-    geom.rebuildFromHistory(
-      walkStore.footfalls,
-      walkStore.history.cadence,
-      walkStore.history.acceleration,
-      walkStore.history.smoothness,
-      walkStore.history.entropy
-    );
-    const geomState = geom.getGeometryState(walkStore.footfalls, walkStore.rotation);
-    const svgContent = ExportEngine.generateSVG(geomState, walkStore.skyState!.palette);
-    
-    const jsonContent = JSON.stringify({
-      commitNumber: specimenNumber,
-      seed: seedHash,
-      date: formattedDate,
-      footfalls: walkStore.footfalls,
-      cadenceBpm: walkStore.cadence,
-      smoothness: walkStore.smoothness,
-      entropy: walkStore.entropy,
-      sky: walkStore.skyState,
-      history: walkStore.history,
-      version: "v1.0"
-    }, null, 2);
-
-    try {
-      const res = await githubCommit({
-        svgContent,
-        jsonContent,
-        commitNumber: specimenNumber,
-        solarPeriod: walkStore.skyState!.solarPeriod,
-        seed: seedHash,
-      });
-
-      if (res.success) {
-        setIsCommitted(true);
-      } else {
-        alert(res.error || "Failed to commit. Storing locally.");
-      }
-    } catch (e) {
-      console.error("Failed to commit to GitHub:", e);
-      alert("Error contacting server. Storing walk details locally.");
-    } finally {
-      setIsCommitting(false);
-    }
+  const handleCopyLink = () => {
+    if (typeof window === "undefined") return;
+    const url = `${window.location.origin}/commit?seed=${activeSeed}&steps=${activeFootfalls}&cadence=${activeCadence}&smoothness=${activeSmoothness}&entropy=${activeEntropy}&solarPeriod=${activeSolarPeriod}&duration=${activeDuration}`;
+    navigator.clipboard.writeText(url);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   const formattedCommitNum = () => {
@@ -193,7 +225,7 @@ export default function CommitPage() {
   }
 
   return (
-    <div className="min-h-screen bg-canvas text-neutral-900 flex flex-col justify-between pb-12 selection:bg-nature-forest selection:text-white">
+    <div className="min-h-screen bg-canvas text-text-primary flex flex-col justify-between pb-12 selection:bg-nature-forest selection:text-white">
       <Header />
 
       {/* CLIMAX REVEAL CONTAINER */}
@@ -205,25 +237,25 @@ export default function CommitPage() {
           transition={{ duration: 0.8, ease: "easeOut" }}
           className="w-full flex justify-center mb-10"
         >
-          {walkStore.skyState && (
+          {activePalette && (
             <CommitCard
               commitNumber={specimenNumber}
-              seed={seedHash}
-              footfalls={walkStore.footfalls}
-              cadence={walkStore.cadence}
-              smoothness={walkStore.smoothness}
-              entropy={walkStore.entropy}
+              seed={activeSeed}
+              footfalls={activeFootfalls}
+              cadence={activeCadence}
+              smoothness={activeSmoothness}
+              entropy={activeEntropy}
               rotation={walkStore.rotation}
-              solarPeriod={walkStore.skyState.solarPeriod}
-              moonPhase={walkStore.skyState.moonPhase}
-              date={formattedDate}
-              palette={walkStore.skyState.palette}
-              history={walkStore.history}
-              duration={walkStore.duration}
+              solarPeriod={activeSolarPeriod}
+              moonPhase={activeMoonPhase}
+              date={activeDate}
+              palette={activePalette}
+              history={activeHistory}
+              duration={activeDuration}
             />
           )}
         </motion.div>
-
+ 
         {/* Step 2: Action details and buttons */}
         <motion.div
           initial={{ opacity: 0, y: 15 }}
@@ -231,59 +263,95 @@ export default function CommitPage() {
           transition={{ duration: 0.8, delay: 0.4 }}
           className="w-full max-w-sm flex flex-col gap-4"
         >
-          {/* GitHub Commit action */}
-          {isCommitted ? (
-            <div className="w-full py-4 px-6 rounded-full border border-nature-forest bg-nature-forest/5 text-nature-forest flex items-center justify-center gap-2 font-semibold">
-              <Check className="w-4 h-4" />
-              <span>Committed to GitHub</span>
-            </div>
-          ) : (
+          {/* Action Row: Primary Share + GitHub silhouette alert */}
+          <div className="flex gap-3 w-full">
             <button
-              onClick={handleGitHubCommit}
-              disabled={isCommitting}
-              className="w-full py-4 px-6 rounded-full bg-neutral-900 hover:bg-neutral-800 disabled:bg-neutral-400 text-white flex items-center justify-center gap-2 font-semibold active:scale-98 shadow-md transition-all"
+              onClick={() => setShowShareOptions(!showShareOptions)}
+              className="flex-grow py-4 px-6 rounded-full bg-btn-primary-bg hover:bg-btn-primary-hover text-white flex items-center justify-center gap-2 font-serif font-normal text-base shadow-md transition-all duration-200 active:scale-98"
             >
-              {isCommitting ? (
-                <>
-                  <RefreshCw className="w-4 h-4 animate-spin" />
-                  <span>Creating Repository Contribution...</span>
-                </>
-              ) : (
-                <>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
-                    <path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4" />
-                    <path d="M9 18c-4.51 2-5-2-7-2" />
-                  </svg>
-                  <span>Commit to GitHub</span>
-                </>
-              )}
+              <Share2 className="w-4 h-4" />
+              <span>Share Specimen</span>
             </button>
-          )}
-
-          {/* Download options */}
-          <div className="grid grid-cols-3 gap-2">
+            
             <button
-              onClick={handleDownloadSVG}
-              className="py-3 px-2 rounded-xl border border-border-subtle bg-white hover:bg-neutral-50 text-neutral-700 flex flex-col items-center gap-1.5 text-[10px] font-mono hover:border-neutral-300 transition-colors"
+              onClick={() => alert("GitHub Mandala Commit is only available when you scan the QR code and commit from your mobile device.")}
+              className="w-14 h-14 rounded-full border border-border-subtle bg-white hover:bg-neutral-50 flex items-center justify-center text-text-primary shadow-sm hover:border-neutral-300 transition-all duration-200"
+              title="Commit to GitHub"
             >
-              <Download className="w-3.5 h-3.5" />
-              <span>VEC (SVG)</span>
-            </button>
-            <button
-              onClick={handleDownloadPNG}
-              className="py-3 px-2 rounded-xl border border-border-subtle bg-white hover:bg-neutral-50 text-neutral-700 flex flex-col items-center gap-1.5 text-[10px] font-mono hover:border-neutral-300 transition-colors"
-            >
-              <ImageIcon className="w-3.5 h-3.5" />
-              <span>IMG (PNG)</span>
-            </button>
-            <button
-              onClick={handleDownloadJSON}
-              className="py-3 px-2 rounded-xl border border-border-subtle bg-white hover:bg-neutral-50 text-neutral-700 flex flex-col items-center gap-1.5 text-[10px] font-mono hover:border-neutral-300 transition-colors"
-            >
-              <FileCode className="w-3.5 h-3.5" />
-              <span>DNA (JSON)</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+                <path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4" />
+                <path d="M9 18c-4.51 2-5-2-7-2" />
+              </svg>
             </button>
           </div>
+
+          {/* Share options panel */}
+          {showShareOptions && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="w-full rounded-[24px] border border-border-subtle bg-white p-6 shadow-md flex flex-col gap-3 text-left font-serif text-sm text-text-secondary"
+            >
+              <h4 className="font-serif font-normal text-text-primary text-base mb-1">Share & Export</h4>
+              
+              <button
+                onClick={handleCopyLink}
+                className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-neutral-50 transition-colors border border-transparent hover:border-border-subtle"
+              >
+                <span className="flex items-center gap-3">
+                  <span className="p-2 rounded-lg bg-emerald-50 text-emerald-600">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
+                      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+                    </svg>
+                  </span>
+                  <span>Copy Shareable Link</span>
+                </span>
+                <span className="text-xs font-mono text-emerald-600">
+                  {copied ? "Copied!" : "Copy"}
+                </span>
+              </button>
+
+              <button
+                onClick={handleDownloadPNG}
+                className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-neutral-50 transition-colors border border-transparent hover:border-border-subtle"
+              >
+                <span className="flex items-center gap-3">
+                  <span className="p-2 rounded-lg bg-blue-50 text-blue-600">
+                    <ImageIcon className="w-4 h-4" />
+                  </span>
+                  <span>Download Specimen Image (PNG)</span>
+                </span>
+                <span className="text-xs text-neutral-400 font-mono">PNG</span>
+              </button>
+
+              <button
+                onClick={handleDownloadSVG}
+                className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-neutral-50 transition-colors border border-transparent hover:border-border-subtle"
+              >
+                <span className="flex items-center gap-3">
+                  <span className="p-2 rounded-lg bg-purple-50 text-purple-600">
+                    <Download className="w-4 h-4" />
+                  </span>
+                  <span>Download Vector Specimen (SVG)</span>
+                </span>
+                <span className="text-xs text-neutral-400 font-mono">SVG</span>
+              </button>
+
+              <button
+                onClick={handleDownloadJSON}
+                className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-neutral-50 transition-colors border border-transparent hover:border-border-subtle"
+              >
+                <span className="flex items-center gap-3">
+                  <span className="p-2 rounded-lg bg-orange-50 text-orange-600">
+                    <FileCode className="w-4 h-4" />
+                  </span>
+                  <span>Download Mathematical DNA (JSON)</span>
+                </span>
+                <span className="text-xs text-neutral-400 font-mono">JSON</span>
+              </button>
+            </motion.div>
+          )}
 
           <div className="w-full text-center mt-4">
             <Link
@@ -298,7 +366,7 @@ export default function CommitPage() {
       </main>
       
       {/* Hidden SVG container to enable SVG/PNG downloads of the specimen */}
-      <div style={{ display: "none" }} dangerouslySetInnerHTML={{ __html: svgString }} />
+      <div id="hidden-svg-holder" style={{ display: "none" }} dangerouslySetInnerHTML={{ __html: svgString }} />
     </div>
   );
 }

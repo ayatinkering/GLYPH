@@ -101,16 +101,16 @@ export function FeetSimulator() {
 
         // ── 1. Radial guide lines (24 guidelines) ────────────────────────────
         p.noFill();
-        p.stroke("rgba(240,228,200,0.04)");
-        p.strokeWeight(0.35);
+        p.stroke("rgba(240,228,200,0.06)");
+        p.strokeWeight(0.6);
         for (let i = 0; i < 24; i++) {
           const a = (i / 24) * Math.PI * 2;
           p.line(0, 0, R * 1.16 * Math.cos(a), R * 1.16 * Math.sin(a));
         }
 
         // ── 2. Outer boundary circle ───────────────────────────────────────
-        p.stroke("rgba(240,228,200,0.11)");
-        p.strokeWeight(0.5);
+        p.stroke("rgba(240,228,200,0.18)");
+        p.strokeWeight(0.95);
         p.circle(0, 0, R * 2.18);
 
         // ── 3. Instrument tick marks (72 ticks) ─────────────────────────────
@@ -120,8 +120,8 @@ export function FeetSimulator() {
           const semi = i % 3 === 0;
           const r1 = R * (major ? 1.0 : semi ? 1.035 : 1.065);
           
-          p.stroke(`rgba(240,228,200,${major ? 0.42 : semi ? 0.2 : 0.08})`);
-          p.strokeWeight(major ? 0.7 : semi ? 0.4 : 0.25);
+          p.stroke(`rgba(240,228,200,${major ? 0.55 : semi ? 0.3 : 0.12})`);
+          p.strokeWeight(major ? 1.25 : semi ? 0.8 : 0.5);
           p.line(r1 * Math.cos(a), r1 * Math.sin(a), R * 1.1 * Math.cos(a), R * 1.1 * Math.sin(a));
         }
 
@@ -130,8 +130,8 @@ export function FeetSimulator() {
         const concentricReveal = p.constrain(stepsCount / 10, 2, 8);
         for (let i = 0; i <= concentricReveal; i++) {
           const r = R * Math.pow(1 / PHI, i);
-          p.stroke(`rgba(212,168,69,${0.042 + (8 - i) * 0.021})`);
-          p.strokeWeight(0.38);
+          p.stroke(`rgba(212,168,69,${0.06 + (8 - i) * 0.035})`);
+          p.strokeWeight(0.8);
           p.circle(0, 0, r * 2);
         }
 
@@ -163,25 +163,25 @@ export function FeetSimulator() {
         const scaleFactor = p.constrain(stepsCount / 80, 0.25, 1.0);
         
         if (stepsCount >= 2) {
-          drawRose(R * 0.17 * scaleFactor, 2, 1, 300, "rgba(240,226,192,0.84)", 0.68);
+          drawRose(R * 0.17 * scaleFactor, 2, 1, 300, "rgba(240,226,192,0.92)", 1.5);
         }
         if (stepsCount >= 8) {
-          drawRose(R * 0.30 * scaleFactor, 3, 1, 500, "rgba(244,214,164,0.73)", 0.62);
+          drawRose(R * 0.30 * scaleFactor, 3, 1, 500, "rgba(244,214,164,0.85)", 1.35);
         }
         if (stepsCount >= 16) {
-          drawRose(R * 0.465 * scaleFactor, 5, 1, 600, "rgba(190,238,222,0.60)", 0.56);
+          drawRose(R * 0.465 * scaleFactor, 5, 1, 600, "rgba(190,238,222,0.76)", 1.25);
         }
         if (stepsCount >= 24) {
-          drawRose(R * 0.62 * scaleFactor, 3/2, 2, 1000, "rgba(244,204,164,0.48)", 0.52);
+          drawRose(R * 0.62 * scaleFactor, 3/2, 2, 1000, "rgba(244,204,164,0.64)", 1.15);
         }
         if (stepsCount >= 40) {
-          drawRose(R * 0.755 * scaleFactor, 5/3, 3, 1200, "rgba(140,210,194,0.38)", 0.48);
+          drawRose(R * 0.755 * scaleFactor, 5/3, 3, 1200, "rgba(140,210,194,0.52)", 1.0);
         }
         if (stepsCount >= 60) {
-          drawRose(R * 0.875 * scaleFactor, 7/4, 4, 1500, "rgba(168,212,240,0.29)", 0.48);
+          drawRose(R * 0.875 * scaleFactor, 7/4, 4, 1500, "rgba(168,212,240,0.40)", 0.9);
         }
         if (stepsCount >= 80) {
-          drawRose(R * scaleFactor, 13/6, 6, 2000, "rgba(240,222,190,0.21)", 0.48);
+          drawRose(R * scaleFactor, 13/6, 6, 2000, "rgba(240,222,190,0.32)", 0.9);
         }
 
         // ── 6. Spirographs (Epitrochoid & Hypocycloid) ──────────────────────
@@ -211,7 +211,7 @@ export function FeetSimulator() {
         if (stepsCount >= 35) {
           drawEpitrochoid(
             R * 0.68, R * 0.68 / 6, R * 0.68 / 6 * 1.12,
-            1200, "rgba(88,198,186,0.19)", 0.42
+            1200, "rgba(88,198,186,0.30)", 0.85
           );
         }
 
@@ -226,14 +226,14 @@ export function FeetSimulator() {
           const y = r * Math.sin(theta);
           const t = i / 233;
           
-          p.fill(`rgba(240,228,200,${0.09 + t * 0.38})`);
-          p.circle(x, y, 0.36 + t * 0.66);
+          p.fill(`rgba(240,228,200,${0.12 + t * 0.48})`);
+          p.circle(x, y, 0.45 + t * 0.95);
         }
 
         // ── 8. Centre ornamental rings ─────────────────────────────────────
         p.noFill();
-        p.stroke("rgba(240,228,200,0.26)");
-        p.strokeWeight(0.5);
+        p.stroke("rgba(240,228,200,0.35)");
+        p.strokeWeight(0.8);
         p.circle(0, 0, 24);
         p.circle(0, 0, 16);
         

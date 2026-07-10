@@ -12,27 +12,51 @@ function renderMandalaToCtx(
   ctx: CanvasRenderingContext2D,
   cx: number,
   cy: number,
-  R: number
+  R: number,
+  palette: ColorPalette
 ) {
   ctx.save();
   ctx.translate(cx, cy);
 
+  // Use dynamic colors based on light theme sky palette
+  const accentColor = palette.accent;
+  const secondaryColor = palette.secondary;
+
+  // Helper to convert hex to rgba
+  const hexToRgba = (hex: string, alpha: number) => {
+    // default fallback
+    let r = 54, g = 84, b = 59;
+    if (hex.startsWith("#")) {
+      const h = hex.replace("#", "");
+      if (h.length === 3) {
+        r = parseInt(h[0] + h[0], 16);
+        g = parseInt(h[1] + h[1], 16);
+        b = parseInt(h[2] + h[2], 16);
+      } else if (h.length === 6) {
+        r = parseInt(h.substring(0, 2), 16);
+        g = parseInt(h.substring(2, 4), 16);
+        b = parseInt(h.substring(4, 6), 16);
+      }
+    }
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  };
+
   // ── 1. Radial guide lines (24, every 15°) ──────────────────────────────────
-  ctx.lineWidth = 0.35;
+  ctx.lineWidth = 0.6;
   for (let i = 0; i < 24; i++) {
     const a = (i / 24) * Math.PI * 2;
     ctx.beginPath();
     ctx.moveTo(0, 0);
     ctx.lineTo(R * 1.16 * Math.cos(a), R * 1.16 * Math.sin(a));
-    ctx.strokeStyle = "rgba(240,228,200,0.04)";
+    ctx.strokeStyle = hexToRgba(secondaryColor, 0.08);
     ctx.stroke();
   }
 
   // ── 2. Outer boundary circle ───────────────────────────────────────────────
   ctx.beginPath();
   ctx.arc(0, 0, R * 1.09, 0, Math.PI * 2);
-  ctx.strokeStyle = "rgba(240,228,200,0.11)";
-  ctx.lineWidth = 0.5;
+  ctx.strokeStyle = hexToRgba(secondaryColor, 0.22);
+  ctx.lineWidth = 0.95;
   ctx.stroke();
 
   // ── 3. Instrument tick marks (72 ticks = every 5°) ────────────────────────
@@ -44,8 +68,8 @@ function renderMandalaToCtx(
     ctx.beginPath();
     ctx.moveTo(r1 * Math.cos(a), r1 * Math.sin(a));
     ctx.lineTo(R * 1.1 * Math.cos(a), R * 1.1 * Math.sin(a));
-    ctx.strokeStyle = `rgba(240,228,200,${major ? 0.42 : semi ? 0.2 : 0.08})`;
-    ctx.lineWidth = major ? 0.7 : semi ? 0.4 : 0.25;
+    ctx.strokeStyle = hexToRgba(secondaryColor, major ? 0.65 : semi ? 0.35 : 0.15);
+    ctx.lineWidth = major ? 1.25 : semi ? 0.8 : 0.5;
     ctx.stroke();
   }
 
@@ -54,8 +78,8 @@ function renderMandalaToCtx(
     const r = R * Math.pow(1 / PHI, i);
     ctx.beginPath();
     ctx.arc(0, 0, r, 0, Math.PI * 2);
-    ctx.strokeStyle = `rgba(212,168,69,${0.042 + (8 - i) * 0.021})`;
-    ctx.lineWidth = 0.38;
+    ctx.strokeStyle = hexToRgba(accentColor, 0.06 + (8 - i) * 0.035);
+    ctx.lineWidth = 0.8;
     ctx.stroke();
   }
 
@@ -84,13 +108,13 @@ function renderMandalaToCtx(
   };
 
   // ── 5. Polar rose layers — outermost → innermost ───────────────────────────
-  drawRose(R,          13/6,  6, 12000, "rgba(240,222,190,0.21)", 0.48);
-  drawRose(R *  0.875,  7/4,  4,  8000, "rgba(168,212,240,0.29)", 0.48);
-  drawRose(R *  0.755,  5/3,  3,  6000, "rgba(140,210,194,0.38)", 0.48);
-  drawRose(R *  0.62,   3/2,  2,  4000, "rgba(244,204,164,0.48)", 0.52);
-  drawRose(R *  0.465,  5,    1,  2000, "rgba(190,238,222,0.60)", 0.56);
-  drawRose(R *  0.30,   3,    1,  1500, "rgba(244,214,164,0.73)", 0.62);
-  drawRose(R *  0.17,   2,    1,   800, "rgba(240,226,192,0.84)", 0.68);
+  drawRose(R,          13/6,  6, 12000, hexToRgba(secondaryColor, 0.35), 0.9);
+  drawRose(R *  0.875,  7/4,  4,  8000, hexToRgba(accentColor, 0.45), 0.9);
+  drawRose(R *  0.755,  5/3,  3,  6000, hexToRgba(secondaryColor, 0.55), 1.0);
+  drawRose(R *  0.62,   3/2,  2,  4000, hexToRgba(accentColor, 0.65), 1.15);
+  drawRose(R *  0.465,  5,    1,  2000, hexToRgba(secondaryColor, 0.75), 1.25);
+  drawRose(R *  0.30,   3,    1,  1500, hexToRgba(accentColor, 0.85), 1.35);
+  drawRose(R *  0.17,   2,    1,   800, hexToRgba(secondaryColor, 0.92), 1.5);
 
   // ── 6. Epitrochoid spirographs ─────────────────────────────────────────────
   const drawEpitrochoid = (
@@ -141,11 +165,11 @@ function renderMandalaToCtx(
 
   drawEpitrochoid(
     R * 0.68, R * 0.68 / 6, R * 0.68 / 6 * 1.12,
-    5000, "rgba(88,198,186,0.19)", 0.42
+    5000, hexToRgba(accentColor, 0.32), 0.85
   );
   drawHypocycloid(
     R * 0.52, R * 0.52 / 7, R * 0.52 / 7 * 0.85,
-    5600, "rgba(178,146,242,0.14)", 0.38
+    5600, hexToRgba(secondaryColor, 0.28), 0.8
   );
 
   // ── 7. Fibonacci phyllotaxis inner constellation ───────────────────────────
@@ -157,26 +181,26 @@ function renderMandalaToCtx(
     const y = r * Math.sin(theta);
     const t = i / 233;
     ctx.beginPath();
-    ctx.arc(x, y, 0.36 + t * 0.66, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(240,228,200,${0.09 + t * 0.38})`;
+    ctx.arc(x, y, 0.45 + t * 0.95, 0, Math.PI * 2);
+    ctx.fillStyle = hexToRgba(accentColor, 0.15 + t * 0.48);
     ctx.fill();
   }
 
   // ── 8. Centre ornamental rings ─────────────────────────────────────────────
   for (const [r, a] of [
-    [12, 0.16],
-    [8,  0.26],
-    [5,  0.40],
+    [12, 0.25],
+    [8,  0.40],
+    [5,  0.55],
     [2.8, 0.0],
   ] as [number, number][]) {
     ctx.beginPath();
     ctx.arc(0, 0, r, 0, Math.PI * 2);
     if (r > 3) {
-      ctx.strokeStyle = `rgba(240,228,200,${a})`;
-      ctx.lineWidth = 0.5;
+      ctx.strokeStyle = hexToRgba(accentColor, a);
+      ctx.lineWidth = 0.8;
       ctx.stroke();
     } else {
-      ctx.fillStyle = "rgba(212,168,69,0.94)";
+      ctx.fillStyle = hexToRgba(secondaryColor, 0.94);
       ctx.fill();
     }
   }
@@ -185,7 +209,7 @@ function renderMandalaToCtx(
 }
 
 // ── Mandala Art Component ────────────────────────────────────────────────────
-function MandalaArt({ size }: { size: number }) {
+function MandalaArt({ size, palette }: { size: number; palette: ColorPalette }) {
   const ref = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -208,7 +232,7 @@ function MandalaArt({ size }: { size: number }) {
     off.height = size * dpr;
     const offCtx = off.getContext("2d")!;
     offCtx.scale(dpr, dpr);
-    renderMandalaToCtx(offCtx, cx, cy, R);
+    renderMandalaToCtx(offCtx, cx, cy, R, palette);
 
     let rot = 0;
     let raf = 0;
@@ -224,7 +248,7 @@ function MandalaArt({ size }: { size: number }) {
     };
     loop();
     return () => cancelAnimationFrame(raf);
-  }, [size]);
+  }, [size, palette]);
 
   return <canvas ref={ref} style={{ width: size, height: size }} />;
 }
@@ -278,13 +302,17 @@ export function CommitCard({
   }, []);
 
   const mandalaSize = cardW - 40; // 20px padding each side
-  const DARK = "#0E1520";
-  const CREAM = "#F0E8D5";
-  const CREAM_DIM = "rgba(240,232,213,0.38)";
-  const CREAM_FAINT = "rgba(240,232,213,0.09)";
-  const GOLD = "rgba(212,168,69,0.88)";
-  const GREEN = "#5FAD41";
-  const TEAL = "rgba(140,210,194,0.82)";
+  
+  // Light themed palette tokens matching the app surface
+  const CARD_BG = palette.background;
+  const TEXT_PRIMARY = "#2B2520";
+  const TEXT_SECONDARY = "#60554E";
+  const BORDER_COLOR = "rgba(43, 37, 32, 0.08)";
+  const TEXT_DIM = "rgba(43, 37, 32, 0.48)";
+  const DOT_GRID_COLOR = "rgba(43, 37, 32, 0.04)";
+  
+  // Design highlights matching solar palettes
+  const GREEN_ACCENT = "#36543B"; // Nature moss green
 
   // Format Walk Title from Solar period (e.g. goldenHour -> Golden Hour Walk)
   const formatWalkTitle = (period: string) => {
@@ -311,15 +339,16 @@ export function CommitCard({
     <div
       style={{
         width: cardW,
-        background: DARK,
+        background: CARD_BG,
         borderRadius: 26,
         overflow: "hidden",
         boxShadow:
-          "0 48px 100px rgba(0,0,0,0.55), 0 12px 36px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.07)",
+          "0 24px 64px rgba(43,37,32,0.08), 0 8px 24px rgba(43,37,32,0.04), inset 0 1px 0 rgba(255,255,255,0.8)",
         backgroundImage: `
-          radial-gradient(${CREAM_FAINT} 1px, transparent 1px)
+          radial-gradient(${DOT_GRID_COLOR} 1px, transparent 1px)
         `,
         backgroundSize: "22px 22px",
+        border: `1px solid ${BORDER_COLOR}`,
       }}
     >
       {/* ─ Top header ────────────────────────────────────────────────────── */}
@@ -338,16 +367,16 @@ export function CommitCard({
               width: 8,
               height: 8,
               borderRadius: "50%",
-              background: GREEN,
+              background: GREEN_ACCENT,
               display: "block",
               flexShrink: 0,
-              boxShadow: `0 0 8px ${GREEN}`,
+              boxShadow: `0 0 6px ${GREEN_ACCENT}`,
             }}
           />
           <span
             style={{
               fontFamily: "Lastik, Lastic, system-ui, sans-serif",
-              color: CREAM,
+              color: TEXT_PRIMARY,
               fontSize: 15,
               fontWeight: 400,
               letterSpacing: "-0.01em",
@@ -359,8 +388,8 @@ export function CommitCard({
         {/* Commit ID */}
         <div
           style={{
-            fontFamily: "Geist Mono, monospace",
-            color: "rgba(240,232,213,0.28)",
+            fontFamily: "Lastik, Lastic, system-ui, sans-serif",
+            color: TEXT_DIM,
             fontSize: 9.5,
             letterSpacing: "0.22em",
           }}
@@ -377,7 +406,7 @@ export function CommitCard({
           justifyContent: "center",
         }}
       >
-        <MandalaArt size={mandalaSize} />
+        <MandalaArt size={mandalaSize} palette={palette} />
       </div>
 
       {/* ─ Walk title ────────────────────────────────────────────────────── */}
@@ -385,7 +414,7 @@ export function CommitCard({
         <h2
           style={{
             fontFamily: "Lastik, Lastic, system-ui, sans-serif",
-            color: CREAM,
+            color: TEXT_PRIMARY,
             fontSize: "clamp(26px, 7.5vw, 36px)",
             fontWeight: 400,
             lineHeight: 1.0,
@@ -397,8 +426,8 @@ export function CommitCard({
         </h2>
         <p
           style={{
-            fontFamily: "Geist, system-ui, sans-serif",
-            color: CREAM_DIM,
+            fontFamily: "Lastik, Lastic, system-ui, sans-serif",
+            color: TEXT_SECONDARY,
             fontSize: 11,
             margin: "5px 0 0",
             letterSpacing: "0.06em",
@@ -414,7 +443,7 @@ export function CommitCard({
         style={{
           margin: "15px 24px 14px",
           height: 1,
-          background: "rgba(240,228,200,0.07)",
+          background: BORDER_COLOR,
         }}
       />
 
@@ -436,7 +465,7 @@ export function CommitCard({
             <div
               style={{
                 fontFamily: "Lastik, Lastic, system-ui, sans-serif",
-                color: CREAM,
+                color: TEXT_PRIMARY,
                 fontSize: "clamp(16px, 5vw, 20px)",
                 fontWeight: 400,
                 lineHeight: 1.1,
@@ -447,8 +476,8 @@ export function CommitCard({
             </div>
             <div
               style={{
-                fontFamily: "Geist, system-ui, sans-serif",
-                color: "rgba(240,232,213,0.32)",
+                fontFamily: "Lastik, Lastic, system-ui, sans-serif",
+                color: TEXT_DIM,
                 fontSize: 9,
                 letterSpacing: "0.15em",
                 textTransform: "uppercase",
@@ -466,9 +495,9 @@ export function CommitCard({
         style={{
           margin: "14px 24px",
           padding: "11px 14px",
-          background: "rgba(240,228,200,0.038)",
+          background: "rgba(43, 37, 32, 0.02)",
           borderRadius: 10,
-          border: "1px solid rgba(240,228,200,0.065)",
+          border: `1px solid ${BORDER_COLOR}`,
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
@@ -476,8 +505,8 @@ export function CommitCard({
       >
         <span
           style={{
-            fontFamily: "Geist Mono, monospace",
-            color: GOLD,
+            fontFamily: "Lastik, Lastic, system-ui, sans-serif",
+            color: palette.accent,
             fontSize: 10.5,
             letterSpacing: "0.04em",
           }}
@@ -485,24 +514,24 @@ export function CommitCard({
           φ = 1.618
         </span>
         <div
-          style={{ width: 1, height: 14, background: "rgba(240,228,200,0.07)" }}
+          style={{ width: 1, height: 14, background: BORDER_COLOR }}
         />
         <span
           style={{
-            fontFamily: "Geist Mono, monospace",
-            color: CREAM_DIM,
+            fontFamily: "Lastik, Lastic, system-ui, sans-serif",
+            color: TEXT_SECONDARY,
             fontSize: 10.5,
           }}
         >
           13 Fibonacci arms
         </span>
         <div
-          style={{ width: 1, height: 14, background: "rgba(240,228,200,0.07)" }}
+          style={{ width: 1, height: 14, background: BORDER_COLOR }}
         />
         <span
           style={{
-            fontFamily: "Geist Mono, monospace",
-            color: TEAL,
+            fontFamily: "Lastik, Lastic, system-ui, sans-serif",
+            color: palette.secondary,
             fontSize: 10.5,
           }}
         >
@@ -523,13 +552,13 @@ export function CommitCard({
           style={{
             flex: 1,
             height: 1,
-            background: "rgba(240,228,200,0.06)",
+            background: BORDER_COLOR,
           }}
         />
         <span
           style={{
-            fontFamily: "Geist Mono, monospace",
-            color: "rgba(240,228,200,0.2)",
+            fontFamily: "Lastik, Lastic, system-ui, sans-serif",
+            color: TEXT_DIM,
             fontSize: 9,
             letterSpacing: "0.12em",
           }}
@@ -540,7 +569,7 @@ export function CommitCard({
           style={{
             flex: 1,
             height: 1,
-            background: "rgba(240,228,200,0.06)",
+            background: BORDER_COLOR,
           }}
         />
       </div>
@@ -556,8 +585,8 @@ export function CommitCard({
       >
         <span
           style={{
-            fontFamily: "Geist, system-ui, sans-serif",
-            color: GREEN,
+            fontFamily: "Lastik, Lastic, system-ui, sans-serif",
+            color: GREEN_ACCENT,
             fontSize: 10.5,
             letterSpacing: "0.04em",
           }}
@@ -570,14 +599,14 @@ export function CommitCard({
               width: 5.5,
               height: 5.5,
               borderRadius: "50%",
-              background: "rgba(95,173,65,0.4)",
+              background: GREEN_ACCENT,
               display: "block",
             }}
           />
           <span
             style={{
               fontFamily: "Lastik, Lastic, system-ui, sans-serif",
-              color: "rgba(240,232,213,0.22)",
+              color: TEXT_DIM,
               fontSize: 10,
               fontWeight: 400,
             }}
