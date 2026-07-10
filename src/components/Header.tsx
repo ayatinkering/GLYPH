@@ -73,6 +73,19 @@ export function Header({ userSession }: HeaderProps) {
               How It Works
             </a>
             <a
+              href="#playground"
+              onClick={(e) => {
+                e.preventDefault();
+                const section = document.getElementById("playground");
+                if (section) {
+                  section.scrollIntoView({ behavior: "smooth" });
+                }
+              }}
+              className="hover:text-text-primary transition-colors duration-200"
+            >
+              See an example
+            </a>
+            <a
               href="https://github.com/ayatinkering/GLYPH"
               target="_blank"
               rel="noopener noreferrer"
