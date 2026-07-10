@@ -209,6 +209,7 @@ export default function CommitPage() {
         palette: activePalette,
       },
       duration: activeDuration,
+      history: activeHistory,
       version: "v1.0"
     };
 

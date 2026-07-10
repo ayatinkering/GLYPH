@@ -183,29 +183,52 @@ export class ExportEngine {
       svg += `    <line x1="${x1.toFixed(2)}" y1="${y1.toFixed(2)}" x2="${x2.toFixed(2)}" y2="${y2.toFixed(2)}" stroke="${customPalette.accent}" stroke-width="${strokeW}" opacity="${opacity}" />\n`;
     }
 
-    // Concentric circles (8)
-    for (let i = 0; i <= 8; i++) {
+    const stepsCount = options?.footfalls !== undefined ? options.footfalls : (geomState?.points?.length || 86);
+    const scaleFactor = Math.min(1.0, Math.max(0.25, stepsCount / 80));
+
+    // Concentric circles
+    const concentricReveal = Math.min(8, Math.max(2, Math.floor(stepsCount / 10)));
+    for (let i = 0; i <= concentricReveal; i++) {
       const r = R * Math.pow(1 / PHI, i);
       const opacity = (0.08 + (8 - i) * 0.038).toFixed(3);
       svg += `    <circle cx="0" cy="0" r="${r.toFixed(2)}" fill="none" stroke="${customPalette.midnightGreen}" stroke-width="0.8" opacity="${opacity}" />\n`;
     }
 
     // Polar roses
-    svg += `    <path d="${getRosePath(R,          13/6, 6)}" fill="none" stroke="${customPalette.midnightGreen}" stroke-width="0.9" opacity="0.32" />\n`;
-    svg += `    <path d="${getRosePath(R * 0.875,  7/4, 4)}" fill="none" stroke="${customPalette.secondary}" stroke-width="0.9" opacity="0.40" />\n`;
-    svg += `    <path d="${getRosePath(R * 0.755,  5/3, 3)}" fill="none" stroke="${customPalette.rosyBrown}" stroke-width="1.0" opacity="0.52" />\n`;
-    svg += `    <path d="${getRosePath(R * 0.62,   3/2, 2)}" fill="none" stroke="${customPalette.midnightGreen}" stroke-width="1.15" opacity="0.64" />\n`;
-    svg += `    <path d="${getRosePath(R * 0.465,  5,   1)}" fill="none" stroke="${customPalette.secondary}" stroke-width="1.25" opacity="0.76" />\n`;
-    svg += `    <path d="${getRosePath(R * 0.30,   3,   1)}" fill="none" stroke="${customPalette.rosyBrown}" stroke-width="1.35" opacity="0.85" />\n`;
-    svg += `    <path d="${getRosePath(R * 0.17,   2,   1)}" fill="none" stroke="${customPalette.accent}" stroke-width="1.5" opacity="0.92" />\n`;
+    if (stepsCount >= 80) {
+      svg += `    <path d="${getRosePath(R * scaleFactor,          13/6, 6)}" fill="none" stroke="${customPalette.midnightGreen}" stroke-width="0.9" opacity="0.32" />\n`;
+    }
+    if (stepsCount >= 60) {
+      svg += `    <path d="${getRosePath(R * 0.875 * scaleFactor,  7/4, 4)}" fill="none" stroke="${customPalette.secondary}" stroke-width="0.9" opacity="0.40" />\n`;
+    }
+    if (stepsCount >= 40) {
+      svg += `    <path d="${getRosePath(R * 0.755 * scaleFactor,  5/3, 3)}" fill="none" stroke="${customPalette.rosyBrown}" stroke-width="1.0" opacity="0.52" />\n`;
+    }
+    if (stepsCount >= 24) {
+      svg += `    <path d="${getRosePath(R * 0.62 * scaleFactor,   3/2, 2)}" fill="none" stroke="${customPalette.midnightGreen}" stroke-width="1.15" opacity="0.64" />\n`;
+    }
+    if (stepsCount >= 16) {
+      svg += `    <path d="${getRosePath(R * 0.465 * scaleFactor,  5,   1)}" fill="none" stroke="${customPalette.secondary}" stroke-width="1.25" opacity="0.76" />\n`;
+    }
+    if (stepsCount >= 8) {
+      svg += `    <path d="${getRosePath(R * 0.30 * scaleFactor,   3,   1)}" fill="none" stroke="${customPalette.rosyBrown}" stroke-width="1.35" opacity="0.85" />\n`;
+    }
+    if (stepsCount >= 2) {
+      svg += `    <path d="${getRosePath(R * 0.17 * scaleFactor,   2,   1)}" fill="none" stroke="${customPalette.accent}" stroke-width="1.5" opacity="0.92" />\n`;
+    }
 
     // Spirographs
-    svg += `    <path d="${getEpitrochoidPath(R * 0.68, R * 0.68 / 6, R * 0.68 / 6 * 1.12)}" fill="none" stroke="${customPalette.rosyBrown}" stroke-width="0.85" opacity="0.30" />\n`;
-    svg += `    <path d="${getHypocycloidPath(R * 0.52, R * 0.52 / 7, R * 0.52 / 7 * 0.85)}" fill="none" stroke="${customPalette.midnightGreen}" stroke-width="0.8" opacity="0.25" />\n`;
+    if (stepsCount >= 35) {
+      svg += `    <path d="${getEpitrochoidPath(R * 0.68, R * 0.68 / 6, R * 0.68 / 6 * 1.12)}" fill="none" stroke="${customPalette.rosyBrown}" stroke-width="0.85" opacity="0.30" />\n`;
+    }
+    if (stepsCount >= 50) {
+      svg += `    <path d="${getHypocycloidPath(R * 0.52, R * 0.52 / 7, R * 0.52 / 7 * 0.85)}" fill="none" stroke="${customPalette.midnightGreen}" stroke-width="0.8" opacity="0.25" />\n`;
+    }
 
     // Phyllotaxis
+    const dotsCount = Math.min(233, stepsCount * 2);
     const dotR = R * 0.35;
-    for (let i = 0; i < 233; i++) {
+    for (let i = 0; i < dotsCount; i++) {
       const r = dotR * Math.sqrt(i / 233);
       const theta = i * GOLDEN_ANGLE;
       const x = r * Math.cos(theta);

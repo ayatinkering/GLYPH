@@ -28,6 +28,7 @@ export default function WalkPage() {
     setPermitted,
     setCoordinates,
     setSkyState,
+    setWeather,
     startWalk,
     addStep,
     updateRotation,
@@ -90,6 +91,17 @@ export default function WalkPage() {
                 geometryEngine.current.setSeed(latitude + "_" + longitude + "_" + Date.now());
               }
             }
+
+            // Fetch weather from Open-Meteo
+            fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true`)
+              .then(res => res.json())
+              .then(data => {
+                if (data?.current_weather) {
+                  setWeather(data.current_weather.temperature, data.current_weather.weathercode);
+                  console.log(`GLYPH: Fetched local weather: ${data.current_weather.temperature}°C, code ${data.current_weather.weathercode}`);
+                }
+              })
+              .catch(err => console.error("GLYPH: Error fetching weather data:", err));
           },
           (err) => {
             console.warn("Geolocation denied. Using default coordinates.", err);
@@ -98,6 +110,16 @@ export default function WalkPage() {
               const sState = skyEngine.current.getSkyState(new Date());
               setSkyState(sState);
             }
+
+            // Fetch default weather for London default coords
+            fetch(`https://api.open-meteo.com/v1/forecast?latitude=51.5074&longitude=-0.1278&current_weather=true`)
+              .then(res => res.json())
+              .then(data => {
+                if (data?.current_weather) {
+                  setWeather(data.current_weather.temperature, data.current_weather.weathercode);
+                }
+              })
+              .catch(err => console.error("GLYPH: Error fetching default weather:", err));
           }
         );
       } else {
@@ -105,6 +127,15 @@ export default function WalkPage() {
           const sState = skyEngine.current.getSkyState(new Date());
           setSkyState(sState);
         }
+        // Fetch default weather
+        fetch(`https://api.open-meteo.com/v1/forecast?latitude=51.5074&longitude=-0.1278&current_weather=true`)
+          .then(res => res.json())
+          .then(data => {
+            if (data?.current_weather) {
+              setWeather(data.current_weather.temperature, data.current_weather.weathercode);
+            }
+          })
+          .catch(err => console.error("GLYPH: Error fetching default weather:", err));
       }
 
       // B. Request Device Motion permission (iOS specific)

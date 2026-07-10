@@ -415,6 +415,7 @@ export function CommitCard({
         palette
       },
       duration,
+      history,
       version: "v1.0"
     };
     ExportEngine.downloadJSONFile(walkDNAData, `mandala_dna_${commitNumber}`);
@@ -598,7 +599,7 @@ export function CommitCard({
             fontSize: 10.5,
           }}
         >
-          13 Fibonacci arms
+          {`${new GeometryEngine().getSymmetryArms(footfalls)} Fibonacci arms`}
         </span>
         <div
           style={{ width: 1, height: 14, background: BORDER_COLOR }}

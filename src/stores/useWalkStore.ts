@@ -21,6 +21,7 @@ interface WalkStoreState {
   lat: number | null;
   lng: number | null;
   skyState: SkyState | null;
+  weather: { temp: number; code: number } | null;
   isPermitted: boolean;
   history: WalkHistory;
 
@@ -28,6 +29,7 @@ interface WalkStoreState {
   setPermitted: (permitted: boolean) => void;
   setCoordinates: (lat: number, lng: number) => void;
   setSkyState: (skyState: SkyState) => void;
+  setWeather: (temp: number, code: number) => void;
   startWalk: () => void;
   addStep: (cadence: number, acceleration: number, smoothness: number, entropy: number) => void;
   updateRotation: (headingRad: number) => void;
@@ -48,6 +50,7 @@ export const useWalkStore = create<WalkStoreState>((set) => ({
   lat: null,
   lng: null,
   skyState: null,
+  weather: null,
   isPermitted: false,
   history: {
     cadence: [],
@@ -63,6 +66,8 @@ export const useWalkStore = create<WalkStoreState>((set) => ({
   
   setSkyState: (skyState) => set({ skyState }),
 
+  setWeather: (temp, code) => set({ weather: { temp, code } }),
+
   startWalk: () =>
     set({
       isWalking: true,
@@ -73,6 +78,7 @@ export const useWalkStore = create<WalkStoreState>((set) => ({
       rotation: 0,
       duration: 0,
       startTime: Date.now(),
+      weather: null,
       history: {
         cadence: [],
         acceleration: [],
@@ -127,6 +133,7 @@ export const useWalkStore = create<WalkStoreState>((set) => ({
       duration: 0,
       startTime: null,
       skyState: null,
+      weather: null,
       history: {
         cadence: [],
         acceleration: [],
