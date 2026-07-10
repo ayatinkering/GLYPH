@@ -378,13 +378,34 @@ export function FeetSimulator() {
     
     const stepsCount = geom["points"].length;
     const geomState = geom.getGeometryState(stepsCount, 0);
-    const svgString = ExportEngine.generateSVG(geomState, {
-      name: "Diurnal Specimen",
-      accent: DARK_GREEN,
-      secondary: MOSS_GREEN,
-      background: BEIGE,
-      ambientGlow: "rgba(10,51,35,0.06)"
-    });
+    const pointsCount = Math.min(987, steps * 8 + 34);
+
+    const svgString = ExportEngine.generateSVG(
+      geomState,
+      {
+        name: "Diurnal Specimen",
+        accent: DARK_GREEN,
+        secondary: MOSS_GREEN,
+        background: BEIGE,
+        ambientGlow: "rgba(10,51,35,0.06)"
+      },
+      {
+        title: formatWalkTitle(period),
+        date: new Date().toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit"
+        }),
+        footfalls: steps,
+        duration: estimatedDuration,
+        distance: estimatedDistance,
+        arms: symmetry,
+        points: pointsCount,
+        commitNumber: 47,
+      }
+    );
 
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
@@ -394,10 +415,10 @@ export function FeetSimulator() {
     const url = URL.createObjectURL(blob);
 
     img.onload = () => {
-      canvas.width = 600;
-      canvas.height = 600;
+      canvas.width = 750;
+      canvas.height = 1200;
       if (ctx) {
-        ctx.drawImage(img, 0, 0, 600, 600);
+        ctx.drawImage(img, 0, 0, 750, 1200);
       }
       ExportEngine.downloadPNGFile(canvas, `simulated_mandala_${steps}`);
       URL.revokeObjectURL(url);
@@ -410,13 +431,35 @@ export function FeetSimulator() {
     if (!geom) return;
     const stepsCount = geom["points"].length;
     const geomState = geom.getGeometryState(stepsCount, 0);
-    ExportEngine.downloadSVGFile(geomState, {
-      name: "Diurnal Specimen",
-      accent: DARK_GREEN,
-      secondary: MOSS_GREEN,
-      background: BEIGE,
-      ambientGlow: "rgba(10,51,35,0.06)"
-    }, `simulated_mandala_${steps}`);
+    const pointsCount = Math.min(987, steps * 8 + 34);
+
+    ExportEngine.downloadSVGFile(
+      geomState,
+      {
+        name: "Diurnal Specimen",
+        accent: DARK_GREEN,
+        secondary: MOSS_GREEN,
+        background: BEIGE,
+        ambientGlow: "rgba(10,51,35,0.06)"
+      },
+      `simulated_mandala_${steps}`,
+      {
+        title: formatWalkTitle(period),
+        date: new Date().toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit"
+        }),
+        footfalls: steps,
+        duration: estimatedDuration,
+        distance: estimatedDistance,
+        arms: symmetry,
+        points: pointsCount,
+        commitNumber: 47,
+      }
+    );
   };
 
   const handleDownloadJSON = () => {

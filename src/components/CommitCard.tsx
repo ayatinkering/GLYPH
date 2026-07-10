@@ -341,7 +341,18 @@ export function CommitCard({
     geom.setSeed(seed);
     geom.rebuildFromHistory(footfalls, history.cadence, history.acceleration, history.smoothness, history.entropy);
     const geomState = geom.getGeometryState(footfalls, rotation);
-    const svgString = ExportEngine.generateSVG(geomState, palette);
+    const pointsCount = Math.min(987, footfalls * 8 + 34);
+
+    const svgString = ExportEngine.generateSVG(geomState, palette, {
+      title: formatWalkTitle(solarPeriod),
+      date: date,
+      footfalls: footfalls,
+      duration: formattedDuration,
+      distance: formattedDistance,
+      arms: geom.getSymmetryArms(footfalls),
+      points: pointsCount,
+      commitNumber: commitNumber,
+    });
 
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
@@ -351,10 +362,10 @@ export function CommitCard({
     const url = URL.createObjectURL(blob);
 
     img.onload = () => {
-      canvas.width = 600;
-      canvas.height = 600;
+      canvas.width = 750;
+      canvas.height = 1200;
       if (ctx) {
-        ctx.drawImage(img, 0, 0, 600, 600);
+        ctx.drawImage(img, 0, 0, 750, 1200);
       }
       ExportEngine.downloadPNGFile(canvas, `mandala_commit_${commitNumber}`);
       URL.revokeObjectURL(url);
@@ -367,7 +378,23 @@ export function CommitCard({
     geom.setSeed(seed);
     geom.rebuildFromHistory(footfalls, history.cadence, history.acceleration, history.smoothness, history.entropy);
     const geomState = geom.getGeometryState(footfalls, rotation);
-    ExportEngine.downloadSVGFile(geomState, palette, `mandala_commit_${commitNumber}`);
+    const pointsCount = Math.min(987, footfalls * 8 + 34);
+
+    ExportEngine.downloadSVGFile(
+      geomState,
+      palette,
+      `mandala_commit_${commitNumber}`,
+      {
+        title: formatWalkTitle(solarPeriod),
+        date: date,
+        footfalls: footfalls,
+        duration: formattedDuration,
+        distance: formattedDistance,
+        arms: geom.getSymmetryArms(footfalls),
+        points: pointsCount,
+        commitNumber: commitNumber,
+      }
+    );
   };
 
   const handleDownloadJSON = () => {

@@ -257,7 +257,6 @@ export class ExportEngine {
     // ── Footer ──
     svg += `  <g>\n`;
     svg += `    <text x="24" y="588" font-size="10.5" fill="${customPalette.accent}" letter-spacing="0.04">Commit to touching grass.</text>\n`;
-    svg += `    <circle cx="340" cy="585" r="2.8" fill="${customPalette.secondary}" />\n`;
     svg += `    <text x="348" y="588" font-size="10" fill="${hexToRgba(MIDNIGHT_GREEN, 0.65)}" text-anchor="end">glyph</text>\n`;
     svg += `  </g>\n`;
 
