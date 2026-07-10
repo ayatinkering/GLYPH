@@ -12,6 +12,7 @@ interface HeaderProps {
 export function Header({ userSession }: HeaderProps) {
   const [scrolled, setScrolled] = useState(false);
   const [showWalkModal, setShowWalkModal] = useState(false);
+  const [qrUrl, setQrUrl] = useState("");
   const router = useRouter();
 
   useEffect(() => {
@@ -19,6 +20,9 @@ export function Header({ userSession }: HeaderProps) {
       setScrolled(window.scrollY > 20);
     };
     window.addEventListener("scroll", handleScroll);
+    if (typeof window !== "undefined") {
+      setQrUrl(`${window.location.origin}/walk`);
+    }
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
@@ -131,22 +135,16 @@ export function Header({ userSession }: HeaderProps) {
             </p>
 
             {/* QR Code Specimen Frame */}
-            <div className="w-44 h-44 bg-white rounded-2xl border border-border-subtle flex items-center justify-center p-4 mx-auto mb-2 shadow-sm">
-              <svg viewBox="0 0 100 100" className="w-full h-full text-text-primary fill-current">
-                <rect x="0" y="0" width="20" height="20" />
-                <rect x="5" y="5" width="10" height="10" fill="white" />
-                <rect x="80" y="0" width="20" height="20" />
-                <rect x="85" y="5" width="10" height="10" fill="white" />
-                <rect x="0" y="80" width="20" height="20" />
-                <rect x="5" y="85" width="10" height="10" fill="white" />
-                <rect x="30" y="30" width="40" height="40" fill="none" stroke="currentColor" strokeWidth="4" />
-                <circle cx="50" cy="50" r="8" />
-                <rect x="35" y="10" width="10" height="5" />
-                <rect x="55" y="15" width="10" height="10" />
-                <rect x="15" y="45" width="5" height="15" />
-                <rect x="75" y="55" width="10" height="5" />
-                <rect x="45" y="75" width="20" height="5" />
-              </svg>
+            <div className="w-44 h-44 bg-white rounded-2xl border border-border-subtle flex items-center justify-center p-2 mx-auto mb-2 shadow-sm">
+              {qrUrl ? (
+                <img
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&color=0a3323&bgcolor=f8f6e9&data=${encodeURIComponent(qrUrl)}`}
+                  alt="QR Code"
+                  className="w-full h-full object-contain"
+                />
+              ) : (
+                <div className="w-6 h-6 border-2 border-emerald-900 border-t-transparent rounded-full animate-spin" />
+              )}
             </div>
           </div>
         </div>

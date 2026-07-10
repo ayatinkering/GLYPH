@@ -10,6 +10,8 @@ import { Header } from "@/components/Header";
 import { motion } from "framer-motion";
 import { Download, Check, ArrowLeft, RefreshCw, FileCode, ImageIcon, EyeOff, Share2 } from "lucide-react";
 import Link from "next/link";
+import { githubCommit } from "@/app/actions/githubCommit";
+import { supabase } from "@/lib/supabase";
 
 export default function CommitPage() {
   const router = useRouter();
@@ -25,6 +27,10 @@ export default function CommitPage() {
   const [showShareOptions, setShowShareOptions] = useState(false);
   const [copied, setCopied] = useState(false);
 
+  const [session, setSession] = useState<any>(null);
+  const [isCommitting, setIsCommitting] = useState(false);
+  const [commitResult, setCommitResult] = useState<{ success: boolean; simulated?: boolean; message?: string; error?: string } | null>(null);
+
   // State to load link-serialized shared walks
   const [sharedData, setSharedData] = useState<{
     seed: string;
@@ -35,6 +41,7 @@ export default function CommitPage() {
     solarPeriod: string;
     duration: number;
     date: string;
+    weather?: { temp: number; code: number } | null;
   } | null>(null);
 
   useEffect(() => {
@@ -42,6 +49,12 @@ export default function CommitPage() {
     const params = new URLSearchParams(window.location.search);
     const seed = params.get("seed");
     const steps = params.get("steps");
+    const tempParam = params.get("temp");
+    const codeParam = params.get("code");
+    const weather = (tempParam !== null && codeParam !== null)
+      ? { temp: parseFloat(tempParam), code: parseInt(codeParam) }
+      : null;
+
     if (seed && steps) {
       setSharedData({
         seed,
@@ -51,6 +64,7 @@ export default function CommitPage() {
         entropy: parseFloat(params.get("entropy") || "0.0") || 0.0,
         solarPeriod: params.get("solarPeriod") || "day",
         duration: parseInt(params.get("duration") || "0") || 0,
+        weather,
         date: params.get("date") || new Date().toLocaleDateString("en-US", {
           year: "numeric",
           month: "long",
@@ -61,6 +75,92 @@ export default function CommitPage() {
       });
     }
   }, []);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  const activeWeather = sharedData ? sharedData.weather : walkStore.weather;
+
+  const handleCommitToGithub = async () => {
+    if (!session) {
+      const redirectUrl = new URL(`${window.location.origin}/commit`);
+      redirectUrl.searchParams.set("seed", activeSeed);
+      redirectUrl.searchParams.set("steps", activeFootfalls.toString());
+      redirectUrl.searchParams.set("cadence", activeCadence.toString());
+      redirectUrl.searchParams.set("smoothness", activeSmoothness.toString());
+      redirectUrl.searchParams.set("entropy", activeEntropy.toString());
+      redirectUrl.searchParams.set("solarPeriod", activeSolarPeriod);
+      redirectUrl.searchParams.set("duration", activeDuration.toString());
+      if (activeWeather) {
+        redirectUrl.searchParams.set("temp", activeWeather.temp.toString());
+        redirectUrl.searchParams.set("code", activeWeather.code.toString());
+      }
+      
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "github",
+        options: {
+          scopes: "repo",
+          redirectTo: redirectUrl.toString(),
+        },
+      });
+      if (error) {
+        alert("Failed to initiate GitHub authentication: " + error.message);
+      }
+      return;
+    }
+
+    setIsCommitting(true);
+    setCommitResult(null);
+
+    try {
+      const walkDNAData = {
+        commitNumber: specimenNumber,
+        seed: activeSeed,
+        date: activeDate,
+        footfalls: activeFootfalls,
+        cadenceBpm: activeCadence,
+        smoothness: activeSmoothness,
+        entropy: activeEntropy,
+        sky: {
+          solarPeriod: activeSolarPeriod,
+          moonPhase: activeMoonPhase,
+          palette: activePalette,
+        },
+        weather: activeWeather ? { temp: activeWeather.temp, code: activeWeather.code } : null,
+        duration: activeDuration,
+        history: activeHistory,
+        version: "v1.0"
+      };
+
+      const result = await githubCommit({
+        svgContent: svgString,
+        jsonContent: JSON.stringify(walkDNAData, null, 2),
+        commitNumber: specimenNumber,
+        solarPeriod: activeSolarPeriod,
+        seed: activeSeed,
+      });
+
+      setCommitResult(result);
+    } catch (err: any) {
+      setCommitResult({
+        success: false,
+        error: err.message || "An unexpected error occurred during commit.",
+      });
+    } finally {
+      setIsCommitting(false);
+    }
+  };
 
   // Safe redirect if direct navigation occurred without walking or loading a shared card
   const hasWalkData = walkStore.footfalls > 0 || sharedData !== null;
@@ -208,6 +308,7 @@ export default function CommitPage() {
         moonPhase: activeMoonPhase,
         palette: activePalette,
       },
+      weather: activeWeather ? { temp: activeWeather.temp, code: activeWeather.code } : null,
       duration: activeDuration,
       history: activeHistory,
       version: "v1.0"
@@ -221,7 +322,10 @@ export default function CommitPage() {
 
   const handleCopyLink = () => {
     if (typeof window === "undefined") return;
-    const url = `${window.location.origin}/commit?seed=${activeSeed}&steps=${activeFootfalls}&cadence=${activeCadence}&smoothness=${activeSmoothness}&entropy=${activeEntropy}&solarPeriod=${activeSolarPeriod}&duration=${activeDuration}`;
+    let url = `${window.location.origin}/commit?seed=${activeSeed}&steps=${activeFootfalls}&cadence=${activeCadence}&smoothness=${activeSmoothness}&entropy=${activeEntropy}&solarPeriod=${activeSolarPeriod}&duration=${activeDuration}`;
+    if (activeWeather) {
+      url += `&temp=${activeWeather.temp}&code=${activeWeather.code}`;
+    }
     navigator.clipboard.writeText(url);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -280,6 +384,9 @@ export default function CommitPage() {
               palette={activePalette}
               history={activeHistory}
               duration={activeDuration}
+              weather={activeWeather}
+              onCommitToGithub={handleCommitToGithub}
+              isSessionActive={!!session}
             />
           )}
         </motion.div>
@@ -302,7 +409,7 @@ export default function CommitPage() {
             </button>
             
             <button
-              onClick={() => alert("GitHub Mandala Commit is only available when you scan the QR code and commit from your mobile device.")}
+              onClick={handleCommitToGithub}
               className="w-14 h-14 rounded-full border border-border-subtle bg-white hover:bg-neutral-50 flex items-center justify-center text-text-primary shadow-sm hover:border-neutral-300 transition-all duration-200"
               title="Commit to GitHub"
             >
@@ -395,6 +502,59 @@ export default function CommitPage() {
       
       {/* Hidden SVG container to enable SVG/PNG downloads of the specimen */}
       <div id="hidden-svg-holder" style={{ display: "none" }} dangerouslySetInnerHTML={{ __html: svgString }} />
+
+      {/* LOADING OVERLAY */}
+      {isCommitting && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-900/15 backdrop-blur-sm animate-fade-in">
+          <div className="relative w-full max-w-sm rounded-[24px] border border-border-subtle bg-canvas p-8 shadow-xl text-center flex flex-col items-center">
+            <div className="w-10 h-10 border-4 border-nature-forest border-t-transparent rounded-full animate-spin mb-4" />
+            <h3 className="font-serif text-xl text-text-primary mb-2">Committing Specimen</h3>
+            <p className="text-sm text-text-secondary leading-relaxed font-serif">
+              Connecting to GitHub to preserve your Mandala Commit in the glyph-walks repository...
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* COMMIT RESULT OVERLAY */}
+      {commitResult && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-900/15 backdrop-blur-sm animate-fade-in">
+          <div className="relative w-full max-w-sm rounded-[24px] border border-border-subtle bg-[#FAF9F5] p-8 shadow-xl text-center flex flex-col items-center">
+            {commitResult.success ? (
+              <>
+                <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mb-4">
+                  <Check className="w-6 h-6" />
+                </div>
+                <h3 className="font-serif text-2xl text-text-primary mb-2">Preserved Forever</h3>
+                <p className="text-sm text-text-secondary leading-relaxed font-serif mb-6">
+                  {commitResult.message}
+                </p>
+                {commitResult.simulated && (
+                  <p className="text-[11px] font-mono text-[#D4A937] bg-yellow-50/50 p-2.5 rounded-xl border border-yellow-100 text-left mb-6 leading-relaxed">
+                    💡 <strong>Offline Simulation Mode:</strong> Supabase environment variables are not configured. To push real commits, configure your local <code>.env</code> file.
+                  </p>
+                )}
+              </>
+            ) : (
+              <>
+                <div className="w-12 h-12 rounded-full bg-red-50 text-red-600 flex items-center justify-center mb-4">
+                  <EyeOff className="w-6 h-6" />
+                </div>
+                <h3 className="font-serif text-2xl text-text-primary mb-2">Commit Failed</h3>
+                <p className="text-sm text-text-secondary leading-relaxed font-serif mb-6">
+                  {commitResult.error}
+                </p>
+              </>
+            )}
+            <button
+              onClick={() => setCommitResult(null)}
+              className="w-full py-3.5 rounded-full bg-btn-primary-bg hover:bg-btn-primary-hover text-white transition-all font-serif text-base"
+            >
+              Continue
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

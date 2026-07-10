@@ -254,7 +254,7 @@ export default function Home() {
             <div className="w-44 h-44 bg-white rounded-2xl border border-border-subtle flex items-center justify-center p-2 mx-auto mb-2 shadow-sm">
               {qrUrl ? (
                 <img
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&color=0a3323&bgcolor=ffffff&data=${encodeURIComponent(qrUrl)}`}
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&color=0a3323&bgcolor=f8f6e9&data=${encodeURIComponent(qrUrl)}`}
                   alt="QR Code"
                   className="w-full h-full object-contain"
                 />

@@ -254,6 +254,23 @@ function MandalaArt({ size, stepsCount }: { size: number; stepsCount: number }) 
   return <canvas ref={ref} style={{ width: size, height: size }} />;
 }
 
+// WMO weather code mapping to simple descriptions
+const getWeatherDescription = (code: number): string => {
+  switch (code) {
+    case 0: return "Clear";
+    case 1: return "Mainly Clear";
+    case 2: return "Partly Cloudy";
+    case 3: return "Overcast";
+    case 45: case 48: return "Foggy";
+    case 51: case 53: case 55: return "Drizzle";
+    case 61: case 63: case 65: return "Rainy";
+    case 71: case 73: case 75: return "Snowy";
+    case 80: case 81: case 82: return "Showers";
+    case 95: case 96: case 99: return "Thunderstorm";
+    default: return "Overcast";
+  }
+};
+
 // ── Share Card Props ──────────────────────────────────────────────────────────
 interface CommitCardProps {
   commitNumber: number;
@@ -275,6 +292,9 @@ interface CommitCardProps {
     rotation: number[];
   };
   duration?: number;
+  weather?: { temp: number; code: number } | null;
+  onCommitToGithub?: () => void;
+  isSessionActive?: boolean;
 }
 
 export function CommitCard({
@@ -291,6 +311,9 @@ export function CommitCard({
   palette,
   history,
   duration = 0,
+  weather = null,
+  onCommitToGithub,
+  isSessionActive = false,
 }: CommitCardProps) {
   const [cardW, setCardW] = useState(375);
   const [copied, setCopied] = useState(false);
@@ -333,7 +356,10 @@ export function CommitCard({
 
   const handleCopyLink = () => {
     if (typeof window === "undefined") return;
-    const url = `${window.location.origin}/commit?seed=${seed}&steps=${footfalls}&cadence=${cadence}&smoothness=${smoothness}&entropy=${entropy}&solarPeriod=${solarPeriod}&duration=${duration}`;
+    let url = `${window.location.origin}/commit?seed=${seed}&steps=${footfalls}&cadence=${cadence}&smoothness=${smoothness}&entropy=${entropy}&solarPeriod=${solarPeriod}&duration=${duration}`;
+    if (weather) {
+      url += `&temp=${weather.temp}&code=${weather.code}`;
+    }
     navigator.clipboard.writeText(url);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -414,6 +440,7 @@ export function CommitCard({
         moonPhase,
         palette
       },
+      weather: weather ? { temp: weather.temp, code: weather.code } : null,
       duration,
       history,
       version: "v1.0"
@@ -510,7 +537,7 @@ export function CommitCard({
             textTransform: "uppercase",
           }}
         >
-          {date}
+          {date} {weather ? `· ${Math.round(weather.temp)}°C · ${getWeatherDescription(weather.code)}` : ""}
         </p>
       </div>
 
@@ -814,7 +841,7 @@ export function CommitCard({
                 margin: 0
               }}
             >
-              GitHub Mandala Commit is only available when you scan the QR code and commit from your mobile device.
+              {isSessionActive ? "Commit this Mandala Specimen to your GitHub profile." : "Connect GitHub to save this Mandala Specimen."}
             </p>
           </div>
         )}
@@ -849,6 +876,7 @@ export function CommitCard({
           {/* GitHub button */}
           <button
             onMouseEnter={() => setHoveredAction("github")}
+            onClick={onCommitToGithub}
             style={{
               background: "none",
               border: "none",
