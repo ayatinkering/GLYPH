@@ -218,7 +218,7 @@ export default function Home() {
           </div>
 
           {/* Minimalist Sandbox Panel Card */}
-          <div className="w-full max-w-3xl rounded-[24px] border border-border-subtle shadow-md bg-white overflow-hidden relative z-10">
+          <div className="w-full flex justify-center relative z-10">
             <FeetSimulator />
           </div>
 
@@ -313,8 +313,8 @@ export default function Home() {
           </div>
 
           {/* Bottom disclaimer */}
-          <div className="text-sm sm:text-base font-serif text-white/70 select-none tracking-widest">
-            {"© 2026 GLYPH INC.    ALL RIGHTS RESERVED"}
+          <div className="text-sm sm:text-base font-serif text-white select-none tracking-widest">
+            {"© 2026 GLYPH Inc.    All Rights Reserved. "}
           </div>
         </div>
       </footer>
