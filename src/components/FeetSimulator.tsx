@@ -13,6 +13,7 @@ const MOSS_GREEN = "#839958";
 const BEIGE = "#F7F4D5";
 const ROSY_BROWN = "#D3968C";
 const MIDNIGHT_GREEN = "#105666";
+const SOFT_PINK = "#E2959D";
 
 // Helper to convert hex to rgba
 const hexToRgba = (hex: string, alpha: number) => {
@@ -37,6 +38,7 @@ export function FeetSimulator() {
   const [period, setPeriod] = useState<string>("Day");
   const [audioStarted, setAudioStarted] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [hoveredAction, setHoveredAction] = useState<"share" | "github" | null>(null);
 
   // Core engines
   const geometryEngineRef = useRef<GeometryEngine | null>(null);
@@ -403,6 +405,46 @@ export function FeetSimulator() {
     img.src = url;
   };
 
+  const handleDownloadSVG = () => {
+    const geom = geometryEngineRef.current;
+    if (!geom) return;
+    const stepsCount = geom["points"].length;
+    const geomState = geom.getGeometryState(stepsCount, 0);
+    ExportEngine.downloadSVGFile(geomState, {
+      name: "Diurnal Specimen",
+      accent: DARK_GREEN,
+      secondary: MOSS_GREEN,
+      background: BEIGE,
+      ambientGlow: "rgba(10,51,35,0.06)"
+    }, `simulated_mandala_${steps}`);
+  };
+
+  const handleDownloadJSON = () => {
+    const walkDNAData = {
+      commitNumber: 47,
+      seed: "GLYPH_SANDBOX",
+      date: new Date().toLocaleDateString(),
+      footfalls: steps,
+      cadenceBpm: cadence,
+      smoothness: 1.0,
+      entropy: 0.0,
+      sky: {
+        solarPeriod: period,
+        moonPhase: 0.5,
+        palette: {
+          name: "Diurnal Specimen",
+          accent: DARK_GREEN,
+          secondary: MOSS_GREEN,
+          background: BEIGE,
+          ambientGlow: "rgba(10,51,35,0.06)"
+        }
+      },
+      duration: steps * 0.6,
+      version: "v1.0"
+    };
+    ExportEngine.downloadJSONFile(walkDNAData, `simulated_dna_${steps}`);
+  };
+
   // Color mappings matching the nature palette
   const CARD_BG = BEIGE;
   const TEXT_PRIMARY = DARK_GREEN;
@@ -649,7 +691,9 @@ export function FeetSimulator() {
           alignItems: "center",
           borderTop: `1px solid ${BORDER_COLOR}`,
           marginTop: 15,
+          position: "relative"
         }}
+        onMouseLeave={() => setHoveredAction(null)}
       >
         <span
           style={{
@@ -662,32 +706,193 @@ export function FeetSimulator() {
           Commit to touching grass.
         </span>
 
+        {/* ── Action Popover overlays ── */}
+        {hoveredAction === "share" && (
+          <div
+            style={{
+              position: "absolute",
+              bottom: "48px",
+              right: "24px",
+              width: "280px",
+              background: "#F7F4D5",
+              border: `1px solid ${BORDER_COLOR}`,
+              borderRadius: "18px",
+              padding: "12px 14px",
+              boxShadow: "0 10px 30px rgba(10, 51, 35, 0.08)",
+              zIndex: 100,
+              textAlign: "left"
+            }}
+            onMouseEnter={() => setHoveredAction("share")}
+          >
+            <h4
+              style={{
+                fontFamily: "var(--font-lastik), Lastik, Lastic, serif",
+                color: TEXT_PRIMARY,
+                fontSize: "13px",
+                fontWeight: 600,
+                margin: "0 0 8px 0"
+              }}
+            >
+              Share & Export
+            </h4>
+            <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
+              <button
+                onClick={handleCopyLink}
+                style={{
+                  width: "100%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  background: "none",
+                  border: "none",
+                  padding: "5px 8px",
+                  borderRadius: "8px",
+                  cursor: "pointer",
+                  textAlign: "left"
+                }}
+                className="hover:bg-neutral-800/5 transition-colors"
+              >
+                <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <span style={{ width: 20, height: 20, borderRadius: "5px", background: hexToRgba(DARK_GREEN, 0.08), color: DARK_GREEN, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ width: 10, height: 10 }}>
+                      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+                    </svg>
+                  </span>
+                  <span style={{ fontFamily: "var(--font-lastik), Lastik, Lastic, serif", fontSize: "11px", color: TEXT_PRIMARY }}>Copy Shareable Link</span>
+                </span>
+                <span style={{ fontFamily: "var(--font-lastik), Lastik, Lastic, serif", fontSize: "10px", color: MOSS_GREEN }}>{copied ? "Copied!" : "Copy"}</span>
+              </button>
+
+              <button
+                onClick={handleDownloadPNG}
+                style={{
+                  width: "100%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  background: "none",
+                  border: "none",
+                  padding: "5px 8px",
+                  borderRadius: "8px",
+                  cursor: "pointer",
+                  textAlign: "left"
+                }}
+                className="hover:bg-neutral-800/5 transition-colors"
+              >
+                <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <span style={{ width: 20, height: 20, borderRadius: "5px", background: hexToRgba(MIDNIGHT_GREEN, 0.08), color: MIDNIGHT_GREEN, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ width: 10, height: 10 }}>
+                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                      <circle cx="8.5" cy="8.5" r="1.5" />
+                      <polyline points="21 15 16 10 5 21" />
+                    </svg>
+                  </span>
+                  <span style={{ fontFamily: "var(--font-lastik), Lastik, Lastic, serif", fontSize: "11px", color: TEXT_PRIMARY }}>Download Specimen (PNG)</span>
+                </span>
+                <span style={{ fontFamily: "var(--font-lastik), Lastik, Lastic, serif", fontSize: "10px", color: MIDNIGHT_GREEN }}>PNG</span>
+              </button>
+
+              <button
+                onClick={handleDownloadSVG}
+                style={{
+                  width: "100%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  background: "none",
+                  border: "none",
+                  padding: "5px 8px",
+                  borderRadius: "8px",
+                  cursor: "pointer",
+                  textAlign: "left"
+                }}
+                className="hover:bg-neutral-800/5 transition-colors"
+              >
+                <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <span style={{ width: 20, height: 20, borderRadius: "5px", background: hexToRgba(ROSY_BROWN, 0.12), color: ROSY_BROWN, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ width: 10, height: 10 }}>
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                      <polyline points="7 10 12 15 17 10" />
+                      <line x1="12" y1="15" x2="12" y2="3" />
+                    </svg>
+                  </span>
+                  <span style={{ fontFamily: "var(--font-lastik), Lastik, Lastic, serif", fontSize: "11px", color: TEXT_PRIMARY }}>Download Vector (SVG)</span>
+                </span>
+                <span style={{ fontFamily: "var(--font-lastik), Lastik, Lastic, serif", fontSize: "10px", color: ROSY_BROWN }}>SVG</span>
+              </button>
+
+              <button
+                onClick={handleDownloadJSON}
+                style={{
+                  width: "100%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  background: "none",
+                  border: "none",
+                  padding: "5px 8px",
+                  borderRadius: "8px",
+                  cursor: "pointer",
+                  textAlign: "left"
+                }}
+                className="hover:bg-neutral-800/5 transition-colors"
+              >
+                <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <span style={{ width: 20, height: 20, borderRadius: "5px", background: hexToRgba(SOFT_PINK, 0.12), color: SOFT_PINK, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ width: 10, height: 10 }}>
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                      <polyline points="14 2 14 8 20 8" />
+                      <line x1="16" y1="13" x2="8" y2="13" />
+                      <line x1="16" y1="17" x2="8" y2="17" />
+                    </svg>
+                  </span>
+                  <span style={{ fontFamily: "var(--font-lastik), Lastik, Lastic, serif", fontSize: "11px", color: TEXT_PRIMARY }}>Download DNA (JSON)</span>
+                </span>
+                <span style={{ fontFamily: "var(--font-lastik), Lastik, Lastic, serif", fontSize: "10px", color: SOFT_PINK }}>JSON</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {hoveredAction === "github" && (
+          <div
+            style={{
+              position: "absolute",
+              bottom: "48px",
+              right: "24px",
+              width: "220px",
+              background: "#F7F4D5",
+              border: `1px solid ${BORDER_COLOR}`,
+              borderRadius: "14px",
+              padding: "10px 12px",
+              boxShadow: "0 10px 30px rgba(10, 51, 35, 0.08)",
+              zIndex: 100,
+              textAlign: "left"
+            }}
+            onMouseEnter={() => setHoveredAction("github")}
+          >
+            <p
+              style={{
+                fontFamily: "var(--font-lastik), Lastik, Lastic, serif",
+                color: TEXT_PRIMARY,
+                fontSize: "11px",
+                lineHeight: "1.4",
+                margin: 0
+              }}
+            >
+              GitHub Mandala Commit is only available when you scan the QR code and commit from your mobile device.
+            </p>
+          </div>
+        )}
+
         {/* Actions inside the bottom right corner of the card */}
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          {/* Share button (Lucide Share2 classic network node icon) */}
           <button
+            onMouseEnter={() => setHoveredAction("share")}
             onClick={handleCopyLink}
-            title={copied ? "Copied!" : "Copy Share Link"}
-            style={{
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              color: copied ? MOSS_GREEN : TEXT_SECONDARY,
-              padding: 4,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              transition: "color 0.2s"
-            }}
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 14, height: 14 }}>
-              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
-            </svg>
-          </button>
-          
-          <button
-            onClick={handleDownloadPNG}
-            title="Download PNG Image"
+            title="Share Specimen"
             style={{
               background: "none",
               border: "none",
@@ -700,15 +905,17 @@ export function FeetSimulator() {
             }}
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 14, height: 14 }}>
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-              <polyline points="7 10 12 15 17 10" />
-              <line x1="12" y1="15" x2="12" y2="3" />
+              <circle cx="18" cy="5" r="3" />
+              <circle cx="6" cy="12" r="3" />
+              <circle cx="18" cy="19" r="3" />
+              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+              <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
             </svg>
           </button>
 
+          {/* GitHub button */}
           <button
-            onClick={() => alert("GitHub Mandala Commit is only available when you scan the QR code and commit from your mobile device.")}
-            title="Commit to GitHub"
+            onMouseEnter={() => setHoveredAction("github")}
             style={{
               background: "none",
               border: "none",
