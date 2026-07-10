@@ -34,10 +34,22 @@ function renderMandalaToCtx(
   ctx: CanvasRenderingContext2D,
   cx: number,
   cy: number,
-  R: number
+  R: number,
+  stepsCount: number
 ) {
   ctx.save();
   ctx.translate(cx, cy);
+
+  if (stepsCount === 0) {
+    ctx.beginPath();
+    ctx.arc(0, 0, 6, 0, Math.PI * 2);
+    ctx.fillStyle = hexToRgba(DARK_GREEN, 0.92);
+    ctx.fill();
+    ctx.restore();
+    return;
+  }
+
+  const scaleFactor = Math.min(1.0, Math.max(0.25, stepsCount / 80));
 
   // ── 1. Radial guide lines (24 guidelines) ──────────────────────────────────
   ctx.lineWidth = 0.6;
@@ -72,7 +84,8 @@ function renderMandalaToCtx(
   }
 
   // ── 4. Golden-ratio concentric circles (8 circles) ─────────────────────────
-  for (let i = 0; i <= 8; i++) {
+  const concentricReveal = Math.min(8, Math.max(2, Math.floor(stepsCount / 10)));
+  for (let i = 0; i <= concentricReveal; i++) {
     const r = R * Math.pow(1 / PHI, i);
     ctx.beginPath();
     ctx.arc(0, 0, r, 0, Math.PI * 2);
@@ -105,14 +118,28 @@ function renderMandalaToCtx(
     ctx.stroke();
   };
 
-  // ── 5. Polar rose layers (Alternating only the 5 required colors) ──────────
-  drawRose(R,          13/6,  6, 12000, hexToRgba(MIDNIGHT_GREEN, 0.35), 0.9);
-  drawRose(R *  0.875,  7/4,  4,  8000, hexToRgba(MOSS_GREEN, 0.45), 0.9);
-  drawRose(R *  0.755,  5/3,  3,  6000, hexToRgba(ROSY_BROWN, 0.55), 1.0);
-  drawRose(R *  0.62,   3/2,  2,  4000, hexToRgba(MIDNIGHT_GREEN, 0.65), 1.15);
-  drawRose(R *  0.465,  5,    1,  2000, hexToRgba(MOSS_GREEN, 0.75), 1.25);
-  drawRose(R *  0.30,   3,    1,  1500, hexToRgba(ROSY_BROWN, 0.85), 1.35);
-  drawRose(R *  0.17,   2,    1,   800, hexToRgba(DARK_GREEN, 0.92), 1.5);
+  // ── 5. Polar rose layers (Revealed based on stepsCount) ────────────────────
+  if (stepsCount >= 80) {
+    drawRose(R * scaleFactor,          13/6,  6, 12000, hexToRgba(MIDNIGHT_GREEN, 0.32), 0.9);
+  }
+  if (stepsCount >= 60) {
+    drawRose(R *  0.875 * scaleFactor,  7/4,  4,  8000, hexToRgba(MOSS_GREEN, 0.40), 0.9);
+  }
+  if (stepsCount >= 40) {
+    drawRose(R *  0.755 * scaleFactor,  5/3,  3,  6000, hexToRgba(ROSY_BROWN, 0.52), 1.0);
+  }
+  if (stepsCount >= 24) {
+    drawRose(R *  0.62 * scaleFactor,   3/2,  2,  4000, hexToRgba(MIDNIGHT_GREEN, 0.64), 1.15);
+  }
+  if (stepsCount >= 16) {
+    drawRose(R *  0.465 * scaleFactor,  5,    1,  2000, hexToRgba(MOSS_GREEN, 0.76), 1.25);
+  }
+  if (stepsCount >= 8) {
+    drawRose(R *  0.30 * scaleFactor,   3,    1,  1500, hexToRgba(ROSY_BROWN, 0.85), 1.35);
+  }
+  if (stepsCount >= 2) {
+    drawRose(R *  0.17 * scaleFactor,   2,    1,   800, hexToRgba(DARK_GREEN, 0.92), 1.5);
+  }
 
   // ── 6. Spirographs (Epitrochoid & Hypocycloid) ─────────────────────────────
   const drawEpitrochoid = (
@@ -138,41 +165,17 @@ function renderMandalaToCtx(
     ctx.stroke();
   };
 
-  const drawHypocycloid = (
-    Rr: number,
-    rr: number,
-    d: number,
-    steps: number,
-    color: string,
-    lw: number
-  ) => {
-    const revs = Math.round(Rr / rr);
-    const total = Math.PI * 2 * revs;
-    ctx.beginPath();
-    for (let i = 0; i <= steps; i++) {
-      const t = (i / steps) * total;
-      const x = (Rr - rr) * Math.cos(t) + d * Math.cos(((Rr - rr) / rr) * t);
-      const y = (Rr - rr) * Math.sin(t) - d * Math.sin(((Rr - rr) / rr) * t);
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    }
-    ctx.strokeStyle = color;
-    ctx.lineWidth = lw;
-    ctx.stroke();
-  };
-
-  drawEpitrochoid(
-    R * 0.68, R * 0.68 / 6, R * 0.68 / 6 * 1.12,
-    5000, hexToRgba(ROSY_BROWN, 0.32), 0.85
-  );
-  drawHypocycloid(
-    R * 0.52, R * 0.52 / 7, R * 0.52 / 7 * 0.85,
-    5600, hexToRgba(MIDNIGHT_GREEN, 0.28), 0.8
-  );
+  if (stepsCount >= 35) {
+    drawEpitrochoid(
+      R * 0.68, R * 0.68 / 6, R * 0.68 / 6 * 1.12,
+      5000, hexToRgba(ROSY_BROWN, 0.30), 0.85
+    );
+  }
 
   // ── 7. Fibonacci phyllotaxis inner constellation ───────────────────────────
+  const dotsCount = Math.min(233, stepsCount * 2);
   const dotR = R * 0.35;
-  for (let i = 0; i < 233; i++) {
+  for (let i = 0; i < dotsCount; i++) {
     const r = dotR * Math.sqrt(i / 233);
     const theta = i * GOLDEN_ANGLE;
     const x = r * Math.cos(theta);
@@ -180,7 +183,7 @@ function renderMandalaToCtx(
     const t = i / 233;
     ctx.beginPath();
     ctx.arc(x, y, 0.45 + t * 0.95, 0, Math.PI * 2);
-    ctx.fillStyle = hexToRgba(DARK_GREEN, 0.15 + t * 0.48);
+    ctx.fillStyle = hexToRgba(DARK_GREEN, 0.12 + t * 0.48);
     ctx.fill();
   }
 
@@ -207,7 +210,7 @@ function renderMandalaToCtx(
 }
 
 // ── Mandala Art Component ────────────────────────────────────────────────────
-function MandalaArt({ size }: { size: number; palette: ColorPalette }) {
+function MandalaArt({ size, stepsCount }: { size: number; stepsCount: number }) {
   const ref = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -230,7 +233,7 @@ function MandalaArt({ size }: { size: number; palette: ColorPalette }) {
     off.height = size * dpr;
     const offCtx = off.getContext("2d")!;
     offCtx.scale(dpr, dpr);
-    renderMandalaToCtx(offCtx, cx, cy, R);
+    renderMandalaToCtx(offCtx, cx, cy, R, stepsCount);
 
     let rot = 0;
     let raf = 0;
@@ -246,7 +249,7 @@ function MandalaArt({ size }: { size: number; palette: ColorPalette }) {
     };
     loop();
     return () => cancelAnimationFrame(raf);
-  }, [size]);
+  }, [size, stepsCount]);
 
   return <canvas ref={ref} style={{ width: size, height: size }} />;
 }
@@ -478,7 +481,7 @@ export function CommitCard({
           justifyContent: "center",
         }}
       >
-        <MandalaArt size={mandalaSize} palette={palette} />
+        <MandalaArt size={mandalaSize} stepsCount={footfalls} />
       </div>
 
       {/* ─ Walk title ────────────────────────────────────────────────────── */}
