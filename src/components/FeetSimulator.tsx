@@ -1,11 +1,29 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { GeometryEngine, GeometryState } from "@/engine/geometry/GeometryEngine";
-import { SkyEngine, SkyState } from "@/engine/sky/SkyEngine";
+import { GeometryEngine } from "@/engine/geometry/GeometryEngine";
+import { SkyEngine, ColorPalette } from "@/engine/sky/SkyEngine";
 
 const PHI = (1 + Math.sqrt(5)) / 2;
 const GOLDEN_ANGLE = 2 * Math.PI * (2 - PHI);
+
+// Helper to convert hex to rgba in p5 sketch
+const hexToRgba = (hex: string, alpha: number) => {
+  let r = 54, g = 84, b = 59;
+  if (hex.startsWith("#")) {
+    const h = hex.replace("#", "");
+    if (h.length === 3) {
+      r = parseInt(h[0] + h[0], 16);
+      g = parseInt(h[1] + h[1], 16);
+      b = parseInt(h[2] + h[2], 16);
+    } else if (h.length === 6) {
+      r = parseInt(h.substring(0, 2), 16);
+      g = parseInt(h.substring(2, 4), 16);
+      b = parseInt(h.substring(4, 6), 16);
+    }
+  }
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
 
 export function FeetSimulator() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -17,6 +35,7 @@ export function FeetSimulator() {
   const [symmetry, setSymmetry] = useState(3);
   const [period, setPeriod] = useState<string>("Day");
   const [audioStarted, setAudioStarted] = useState(false);
+  const [palette, setPalette] = useState<ColorPalette | null>(null);
 
   // Core engines
   const geometryEngineRef = useRef<GeometryEngine | null>(null);
@@ -48,6 +67,7 @@ export function FeetSimulator() {
     skyEngineRef.current = sky;
     setPeriod(skyState.solarPeriod);
     setSymmetry(geom.getSymmetryArms(0));
+    setPalette(skyState.palette);
 
     // 2. Initialize dynamic p5.js instance
     const p5Lib = require("p5");
@@ -55,12 +75,12 @@ export function FeetSimulator() {
     let p5Instance: any = null;
 
     const sketch = (p: any) => {
-      let palette = skyState.palette;
+      let activePalette = skyState.palette;
       let rotationAngle = 0;
 
       p.setup = () => {
         const width = canvasRef.current?.clientWidth ?? 335;
-        p.createCanvas(width, width); // Keep it square matching the artwork viewport
+        p.createCanvas(width, width);
         p.angleMode(p.RADIANS);
         p.frameRate(60);
       };
@@ -73,17 +93,20 @@ export function FeetSimulator() {
         const cy = p.height / 2;
         const R = p.width * 0.43;
 
+        const accentColor = activePalette.accent;
+        const secondaryColor = activePalette.secondary;
+
         if (geom["points"].length === 0) {
           // Draw a pulsing green starting seed dot
-          p.fill("#5FAD41");
+          p.fill(accentColor);
           p.noStroke();
           const pulse = 6 + Math.sin(p.frameCount * 0.08) * 1.5;
           p.circle(cx, cy, pulse);
           
-          p.fill("rgba(240,232,213,0.32)");
+          p.fill(hexToRgba(secondaryColor, 0.48));
           p.textAlign(p.CENTER, p.CENTER);
-          p.textFont("monospace");
-          p.textSize(8.5);
+          p.textFont("sans-serif");
+          p.textSize(9);
           p.text("CLICK CANVAS TO START WALK", cx, cy + 24);
           return;
         }
@@ -93,7 +116,7 @@ export function FeetSimulator() {
 
         const ctx = p.drawingContext;
         ctx.shadowBlur = 8;
-        ctx.shadowColor = "rgba(212,168,69,0.4)";
+        ctx.shadowColor = hexToRgba(accentColor, 0.3);
 
         p.push();
         p.translate(cx, cy);
@@ -101,7 +124,7 @@ export function FeetSimulator() {
 
         // ── 1. Radial guide lines (24 guidelines) ────────────────────────────
         p.noFill();
-        p.stroke("rgba(240,228,200,0.06)");
+        p.stroke(hexToRgba(secondaryColor, 0.08));
         p.strokeWeight(0.6);
         for (let i = 0; i < 24; i++) {
           const a = (i / 24) * Math.PI * 2;
@@ -109,7 +132,7 @@ export function FeetSimulator() {
         }
 
         // ── 2. Outer boundary circle ───────────────────────────────────────
-        p.stroke("rgba(240,228,200,0.18)");
+        p.stroke(hexToRgba(secondaryColor, 0.22));
         p.strokeWeight(0.95);
         p.circle(0, 0, R * 2.18);
 
@@ -120,7 +143,7 @@ export function FeetSimulator() {
           const semi = i % 3 === 0;
           const r1 = R * (major ? 1.0 : semi ? 1.035 : 1.065);
           
-          p.stroke(`rgba(240,228,200,${major ? 0.55 : semi ? 0.3 : 0.12})`);
+          p.stroke(hexToRgba(secondaryColor, major ? 0.65 : semi ? 0.35 : 0.15));
           p.strokeWeight(major ? 1.25 : semi ? 0.8 : 0.5);
           p.line(r1 * Math.cos(a), r1 * Math.sin(a), R * 1.1 * Math.cos(a), R * 1.1 * Math.sin(a));
         }
@@ -130,7 +153,7 @@ export function FeetSimulator() {
         const concentricReveal = p.constrain(stepsCount / 10, 2, 8);
         for (let i = 0; i <= concentricReveal; i++) {
           const r = R * Math.pow(1 / PHI, i);
-          p.stroke(`rgba(212,168,69,${0.06 + (8 - i) * 0.035})`);
+          p.stroke(hexToRgba(accentColor, 0.06 + (8 - i) * 0.035));
           p.strokeWeight(0.8);
           p.circle(0, 0, r * 2);
         }
@@ -163,25 +186,25 @@ export function FeetSimulator() {
         const scaleFactor = p.constrain(stepsCount / 80, 0.25, 1.0);
         
         if (stepsCount >= 2) {
-          drawRose(R * 0.17 * scaleFactor, 2, 1, 300, "rgba(240,226,192,0.92)", 1.5);
+          drawRose(R * 0.17 * scaleFactor, 2, 1, 300, hexToRgba(secondaryColor, 0.92), 1.5);
         }
         if (stepsCount >= 8) {
-          drawRose(R * 0.30 * scaleFactor, 3, 1, 500, "rgba(244,214,164,0.85)", 1.35);
+          drawRose(R * 0.30 * scaleFactor, 3, 1, 500, hexToRgba(accentColor, 0.85), 1.35);
         }
         if (stepsCount >= 16) {
-          drawRose(R * 0.465 * scaleFactor, 5, 1, 600, "rgba(190,238,222,0.76)", 1.25);
+          drawRose(R * 0.465 * scaleFactor, 5, 1, 600, hexToRgba(secondaryColor, 0.76), 1.25);
         }
         if (stepsCount >= 24) {
-          drawRose(R * 0.62 * scaleFactor, 3/2, 2, 1000, "rgba(244,204,164,0.64)", 1.15);
+          drawRose(R * 0.62 * scaleFactor, 3/2, 2, 1000, hexToRgba(accentColor, 0.64), 1.15);
         }
         if (stepsCount >= 40) {
-          drawRose(R * 0.755 * scaleFactor, 5/3, 3, 1200, "rgba(140,210,194,0.52)", 1.0);
+          drawRose(R * 0.755 * scaleFactor, 5/3, 3, 1200, hexToRgba(secondaryColor, 0.52), 1.0);
         }
         if (stepsCount >= 60) {
-          drawRose(R * 0.875 * scaleFactor, 7/4, 4, 1500, "rgba(168,212,240,0.40)", 0.9);
+          drawRose(R * 0.875 * scaleFactor, 7/4, 4, 1500, hexToRgba(accentColor, 0.40), 0.9);
         }
         if (stepsCount >= 80) {
-          drawRose(R * scaleFactor, 13/6, 6, 2000, "rgba(240,222,190,0.32)", 0.9);
+          drawRose(R * scaleFactor, 13/6, 6, 2000, hexToRgba(secondaryColor, 0.32), 0.9);
         }
 
         // ── 6. Spirographs (Epitrochoid & Hypocycloid) ──────────────────────
@@ -211,7 +234,7 @@ export function FeetSimulator() {
         if (stepsCount >= 35) {
           drawEpitrochoid(
             R * 0.68, R * 0.68 / 6, R * 0.68 / 6 * 1.12,
-            1200, "rgba(88,198,186,0.30)", 0.85
+            1200, hexToRgba(accentColor, 0.30), 0.85
           );
         }
 
@@ -226,18 +249,18 @@ export function FeetSimulator() {
           const y = r * Math.sin(theta);
           const t = i / 233;
           
-          p.fill(`rgba(240,228,200,${0.12 + t * 0.48})`);
+          p.fill(hexToRgba(accentColor, 0.12 + t * 0.48));
           p.circle(x, y, 0.45 + t * 0.95);
         }
 
         // ── 8. Centre ornamental rings ─────────────────────────────────────
         p.noFill();
-        p.stroke("rgba(240,228,200,0.35)");
+        p.stroke(hexToRgba(accentColor, 0.35));
         p.strokeWeight(0.8);
         p.circle(0, 0, 24);
         p.circle(0, 0, 16);
         
-        p.fill("rgba(212,168,69,0.94)");
+        p.fill(hexToRgba(secondaryColor, 0.94));
         p.noStroke();
         p.circle(0, 0, 5);
 
@@ -263,7 +286,6 @@ export function FeetSimulator() {
   const handleCanvasClick = async () => {
     if (typeof window === "undefined") return;
 
-    // 1. Initialize Tone.js synthesizer upon first click (Autoplay policy friendly)
     if (!audioStarted) {
       const Tone = require("tone");
       await Tone.start();
@@ -291,13 +313,12 @@ export function FeetSimulator() {
     const now = Date.now();
     const newStepIndex = geom["points"].length + 1;
 
-    // Calculate simulated cadence (BPM)
     clickTimestampsRef.current.push(now);
     if (clickTimestampsRef.current.length > 5) {
       clickTimestampsRef.current.shift();
     }
     
-    let calculatedBpm = 100; // default baseline
+    let calculatedBpm = 100;
     if (clickTimestampsRef.current.length > 1) {
       const sum = [];
       for (let i = 1; i < clickTimestampsRef.current.length; i++) {
@@ -307,14 +328,12 @@ export function FeetSimulator() {
       calculatedBpm = Math.round(60000 / avgInterval);
     }
 
-    // Trigger synthetic audio woodblock plucked note (notes mapped dynamically to step indices)
     if (synthRef.current) {
       const pentatonic = ["C4", "D4", "E4", "G4", "A4", "C5", "D5", "E5"];
       const note = pentatonic[(newStepIndex - 1) % pentatonic.length];
       synthRef.current.triggerAttackRelease(note, "16n");
     }
 
-    // Add point to geometry engine (simulate variables)
     geom.addFootfallPoint(newStepIndex, calculatedBpm, 1.2, 0.9, 0.1);
 
     setSteps(newStepIndex);
@@ -332,7 +351,6 @@ export function FeetSimulator() {
     clickTimestampsRef.current = [];
   };
 
-  // Format Walk Title from Solar period (e.g. goldenHour -> Golden Hour Walk)
   const formatWalkTitle = (solarPeriod: string) => {
     switch (solarPeriod.toLowerCase()) {
       case "goldenhour":
@@ -353,27 +371,30 @@ export function FeetSimulator() {
   // Calculate estimated distance (0.75m per step)
   const estimatedDistance = `${(steps * 0.00075).toFixed(1)} km`;
 
-  const DARK = "#0E1520";
-  const CREAM = "#F0E8D5";
-  const CREAM_DIM = "rgba(240,232,213,0.38)";
-  const CREAM_FAINT = "rgba(240,232,213,0.09)";
-  const GOLD = "rgba(212,168,69,0.88)";
-  const GREEN = "#5FAD41";
-  const TEAL = "rgba(140,210,194,0.82)";
+  // Fallback defaults if useEffect hasn't run yet
+  const CARD_BG = palette?.background || "#FAFAF8";
+  const TEXT_PRIMARY = "#2B2520";
+  const TEXT_SECONDARY = "#60554E";
+  const BORDER_COLOR = "rgba(43, 37, 32, 0.08)";
+  const TEXT_DIM = "rgba(43, 37, 32, 0.48)";
+  const DOT_GRID_COLOR = "rgba(43, 37, 32, 0.04)";
+  
+  const GREEN_ACCENT = "#36543B";
 
   return (
     <div
       style={{
         width: cardW,
-        background: DARK,
+        background: CARD_BG,
         borderRadius: 26,
         overflow: "hidden",
         boxShadow:
-          "0 48px 100px rgba(0,0,0,0.55), 0 12px 36px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.07)",
+          "0 24px 64px rgba(43,37,32,0.08), 0 8px 24px rgba(43,37,32,0.04), inset 0 1px 0 rgba(255,255,255,0.8)",
         backgroundImage: `
-          radial-gradient(${CREAM_FAINT} 1px, transparent 1px)
+          radial-gradient(${DOT_GRID_COLOR} 1px, transparent 1px)
         `,
         backgroundSize: "22px 22px",
+        border: `1px solid ${BORDER_COLOR}`,
       }}
       className="mx-auto select-none relative"
     >
@@ -385,17 +406,17 @@ export function FeetSimulator() {
             position: "absolute",
             top: 22,
             right: 120,
-            fontFamily: "monospace",
+            fontFamily: "Lastik, Lastic, system-ui, sans-serif",
             fontSize: 9,
-            color: CREAM_DIM,
-            background: "rgba(255,255,255,0.05)",
-            border: "1px solid rgba(255,255,255,0.1)",
+            color: TEXT_SECONDARY,
+            background: "rgba(43, 37, 32, 0.05)",
+            border: `1px solid ${BORDER_COLOR}`,
             padding: "2px 8px",
             borderRadius: 20,
             cursor: "pointer",
             zIndex: 30,
           }}
-          className="hover:text-white transition-colors"
+          className="hover:text-neutral-900 transition-colors"
         >
           RESET
         </button>
@@ -417,16 +438,16 @@ export function FeetSimulator() {
               width: 8,
               height: 8,
               borderRadius: "50%",
-              background: GREEN,
+              background: GREEN_ACCENT,
               display: "block",
               flexShrink: 0,
-              boxShadow: `0 0 8px ${GREEN}`,
+              boxShadow: `0 0 6px ${GREEN_ACCENT}`,
             }}
           />
           <span
             style={{
               fontFamily: "Lastik, Lastic, system-ui, sans-serif",
-              color: CREAM,
+              color: TEXT_PRIMARY,
               fontSize: 15,
               fontWeight: 400,
               letterSpacing: "-0.01em",
@@ -438,8 +459,8 @@ export function FeetSimulator() {
         {/* Commit ID */}
         <div
           style={{
-            fontFamily: "Geist Mono, monospace",
-            color: "rgba(240,232,213,0.28)",
+            fontFamily: "Lastik, Lastic, system-ui, sans-serif",
+            color: TEXT_DIM,
             fontSize: 9.5,
             letterSpacing: "0.22em",
           }}
@@ -475,7 +496,7 @@ export function FeetSimulator() {
         <h2
           style={{
             fontFamily: "Lastik, Lastic, system-ui, sans-serif",
-            color: CREAM,
+            color: TEXT_PRIMARY,
             fontSize: "clamp(26px, 7.5vw, 36px)",
             fontWeight: 400,
             lineHeight: 1.0,
@@ -487,8 +508,8 @@ export function FeetSimulator() {
         </h2>
         <p
           style={{
-            fontFamily: "Geist, system-ui, sans-serif",
-            color: CREAM_DIM,
+            fontFamily: "Lastik, Lastic, system-ui, sans-serif",
+            color: TEXT_SECONDARY,
             fontSize: 11,
             margin: "5px 0 0",
             letterSpacing: "0.06em",
@@ -504,7 +525,7 @@ export function FeetSimulator() {
         style={{
           margin: "15px 24px 14px",
           height: 1,
-          background: "rgba(240,228,200,0.07)",
+          background: BORDER_COLOR,
         }}
       />
 
@@ -526,7 +547,7 @@ export function FeetSimulator() {
             <div
               style={{
                 fontFamily: "Lastik, Lastic, system-ui, sans-serif",
-                color: CREAM,
+                color: TEXT_PRIMARY,
                 fontSize: "clamp(16px, 5vw, 20px)",
                 fontWeight: 400,
                 lineHeight: 1.1,
@@ -537,8 +558,8 @@ export function FeetSimulator() {
             </div>
             <div
               style={{
-                fontFamily: "Geist, system-ui, sans-serif",
-                color: "rgba(240,232,213,0.32)",
+                fontFamily: "Lastik, Lastic, system-ui, sans-serif",
+                color: TEXT_DIM,
                 fontSize: 9,
                 letterSpacing: "0.15em",
                 textTransform: "uppercase",
@@ -556,9 +577,9 @@ export function FeetSimulator() {
         style={{
           margin: "14px 24px",
           padding: "11px 14px",
-          background: "rgba(240,228,200,0.038)",
+          background: "rgba(43, 37, 32, 0.02)",
           borderRadius: 10,
-          border: "1px solid rgba(240,228,200,0.065)",
+          border: `1px solid ${BORDER_COLOR}`,
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
@@ -566,8 +587,8 @@ export function FeetSimulator() {
       >
         <span
           style={{
-            fontFamily: "Geist Mono, monospace",
-            color: GOLD,
+            fontFamily: "Lastik, Lastic, system-ui, sans-serif",
+            color: palette?.accent || GREEN_ACCENT,
             fontSize: 10.5,
             letterSpacing: "0.04em",
           }}
@@ -575,24 +596,24 @@ export function FeetSimulator() {
           φ = 1.618
         </span>
         <div
-          style={{ width: 1, height: 14, background: "rgba(240,228,200,0.07)" }}
+          style={{ width: 1, height: 14, background: BORDER_COLOR }}
         />
         <span
           style={{
-            fontFamily: "Geist Mono, monospace",
-            color: CREAM_DIM,
+            fontFamily: "Lastik, Lastic, system-ui, sans-serif",
+            color: TEXT_SECONDARY,
             fontSize: 10.5,
           }}
         >
           {`${symmetry} arms`}
         </span>
         <div
-          style={{ width: 1, height: 14, background: "rgba(240,228,200,0.07)" }}
+          style={{ width: 1, height: 14, background: BORDER_COLOR }}
         />
         <span
           style={{
-            fontFamily: "Geist Mono, monospace",
-            color: TEAL,
+            fontFamily: "Lastik, Lastic, system-ui, sans-serif",
+            color: palette?.secondary || GREEN_ACCENT,
             fontSize: 10.5,
           }}
         >
@@ -613,13 +634,13 @@ export function FeetSimulator() {
           style={{
             flex: 1,
             height: 1,
-            background: "rgba(240,228,200,0.06)",
+            background: BORDER_COLOR,
           }}
         />
         <span
           style={{
-            fontFamily: "Geist Mono, monospace",
-            color: "rgba(240,228,200,0.2)",
+            fontFamily: "Lastik, Lastic, system-ui, sans-serif",
+            color: TEXT_DIM,
             fontSize: 9,
             letterSpacing: "0.12em",
           }}
@@ -630,7 +651,7 @@ export function FeetSimulator() {
           style={{
             flex: 1,
             height: 1,
-            background: "rgba(240,228,200,0.06)",
+            background: BORDER_COLOR,
           }}
         />
       </div>
@@ -646,8 +667,8 @@ export function FeetSimulator() {
       >
         <span
           style={{
-            fontFamily: "Geist, system-ui, sans-serif",
-            color: GREEN,
+            fontFamily: "Lastik, Lastic, system-ui, sans-serif",
+            color: GREEN_ACCENT,
             fontSize: 10.5,
             letterSpacing: "0.04em",
           }}
@@ -660,14 +681,14 @@ export function FeetSimulator() {
               width: 5.5,
               height: 5.5,
               borderRadius: "50%",
-              background: "rgba(95,173,65,0.4)",
+              background: GREEN_ACCENT,
               display: "block",
             }}
           />
           <span
             style={{
               fontFamily: "Lastik, Lastic, system-ui, sans-serif",
-              color: "rgba(240,232,213,0.22)",
+              color: TEXT_DIM,
               fontSize: 10,
               fontWeight: 400,
             }}
