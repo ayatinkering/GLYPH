@@ -10,7 +10,7 @@ const GOLDEN_ANGLE = 2 * Math.PI * (2 - PHI);
 // Palette values matching the user's exact requirements:
 const DARK_GREEN = "#0A3323";
 const MOSS_GREEN = "#839958";
-const BEIGE = "#FAF8E7";
+const BEIGE = "#f8f6e9";
 const ROSY_BROWN = "#D3968C";
 const MIDNIGHT_GREEN = "#105666";
 const SOFT_PINK = "#E2959D";
@@ -494,7 +494,7 @@ export function FeetSimulator() {
   const TEXT_SECONDARY = MIDNIGHT_GREEN;
   const BORDER_COLOR = "rgba(10, 51, 35, 0.12)";
   const TEXT_DIM = "rgba(16, 86, 102, 0.65)";
-  const DOT_GRID_COLOR = "rgba(10, 51, 35, 0.08)";
+  const DOT_GRID_COLOR = "#dfddd0";
 
   return (
     <div

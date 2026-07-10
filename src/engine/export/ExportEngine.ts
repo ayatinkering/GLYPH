@@ -34,7 +34,7 @@ export class ExportEngine {
 
     const DARK_GREEN = "#0A3323";
     const MOSS_GREEN = "#839958";
-    const BEIGE = "#F7F4D5";
+    const BEIGE = "#f8f6e9";
     const ROSY_BROWN = "#D3968C";
     const MIDNIGHT_GREEN = "#105666";
     const SOFT_PINK = "#E2959D";
@@ -129,7 +129,7 @@ export class ExportEngine {
     let svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${height}" width="${size}" height="${height}">\n`;
     svg += `  <defs>\n`;
     svg += `    <pattern id="dot-grid" x="0" y="0" width="22" height="22" patternUnits="userSpaceOnUse">\n`;
-    svg += `      <circle cx="1" cy="1" r="1" fill="${hexToRgba(DARK_GREEN, 0.08)}" />\n`;
+    svg += `      <circle cx="1" cy="1" r="1" fill="#dfddd0" />\n`;
     svg += `    </pattern>\n`;
     svg += `    <style type="text/css">\n`;
     svg += `      @font-face {\n`;
