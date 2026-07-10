@@ -1,0 +1,77 @@
+@import "tailwindcss";
+
+:root {
+  /* Core Design Tokens - Soft Organic Nature Palette */
+  --bg-canvas: #FAF9F5; /* Warm natural cream paper background */
+  --bg-paper: #FFFFFF;
+  
+  --text-primary: #566207; /* Deep soil brown (replaces absolute black) */
+  --text-secondary: #6a682f; /* Warm ground brown for descriptions */
+  --text-muted: #6a6424; /* Muted clay brown */
+  
+  --border-subtle: rgba(43, 37, 32, 0.08); /* Organic, light brown hairline separators */
+  
+  /* Button Colors */
+  --btn-primary-bg: #566207;
+  --btn-primary-hover: #4A3E36;
+  
+  /* Nature Color Accents */
+  --nature-forest: #2E4B35;
+  --nature-gold: #D4A937;
+  --nature-sky: #A8D5F2;
+  --nature-lavender: #7764D8;
+  --nature-mist: #F4F6F5;
+}
+
+@theme {
+  /* Map design tokens to Tailwind utility classes */
+  --color-canvas: var(--bg-canvas);
+  --color-paper: var(--bg-paper);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-border-subtle: var(--border-subtle);
+  
+  --color-btn-primary-bg: var(--btn-primary-bg);
+  --color-btn-primary-hover: var(--btn-primary-hover);
+  
+  --color-nature-forest: var(--nature-forest);
+  --color-nature-gold: var(--nature-gold);
+  --color-nature-sky: var(--nature-sky);
+  --color-nature-lavender: var(--nature-lavender);
+  --color-nature-mist: var(--nature-mist);
+  
+  --font-serif: var(--font-lastik), serif;
+  --font-sans: var(--font-lastik), serif;
+  --font-mono: var(--font-lastik), monospace;
+}
+
+body {
+  background-color: var(--bg-canvas);
+  color: var(--text-primary);
+  font-family: var(--font-sans), sans-serif;
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom scrollbar matching paper-aesthetic */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-canvas);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(24, 24, 27, 0.15);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(24, 24, 27, 0.3);
+}
+
+

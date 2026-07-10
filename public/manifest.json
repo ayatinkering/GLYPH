@@ -1,0 +1,17 @@
+{
+  "name": "GLYPH — Computational Camera for Movement",
+  "short_name": "GLYPH",
+  "description": "Every walk leaves behind a deterministic mathematical mandala committed to GitHub.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FAFAF8",
+  "theme_color": "#36543B",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ]
+}
