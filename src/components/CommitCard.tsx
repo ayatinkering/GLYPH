@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ColorPalette } from "@/engine/sky/SkyEngine";
+import { ExportEngine } from "@/engine/export/ExportEngine";
+import { GeometryEngine } from "@/engine/geometry/GeometryEngine";
 
 // ── Math constants ─────────────────────────────────────────────────────────────
 const PHI = (1 + Math.sqrt(5)) / 2;
@@ -287,6 +289,7 @@ export function CommitCard({
   duration = 0,
 }: CommitCardProps) {
   const [cardW, setCardW] = useState(375);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     const update = () =>
@@ -322,6 +325,40 @@ export function CommitCard({
 
   const formattedDuration = `${Math.max(1, Math.round(duration / 60))} min`;
   const formattedDistance = `${(footfalls * 0.00075).toFixed(1)} km`;
+
+  const handleCopyLink = () => {
+    if (typeof window === "undefined") return;
+    const url = `${window.location.origin}/commit?seed=${seed}&steps=${footfalls}&cadence=${cadence}&smoothness=${smoothness}&entropy=${entropy}&solarPeriod=${solarPeriod}&duration=${duration}`;
+    navigator.clipboard.writeText(url);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleDownloadPNG = () => {
+    const geom = new GeometryEngine();
+    geom.setSeed(seed);
+    geom.rebuildFromHistory(footfalls, history.cadence, history.acceleration, history.smoothness, history.entropy);
+    const geomState = geom.getGeometryState(footfalls, rotation);
+    const svgString = ExportEngine.generateSVG(geomState, palette);
+
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    const img = new Image();
+    
+    const blob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+
+    img.onload = () => {
+      canvas.width = 600;
+      canvas.height = 600;
+      if (ctx) {
+        ctx.drawImage(img, 0, 0, 600, 600);
+      }
+      ExportEngine.downloadPNGFile(canvas, `mandala_commit_${commitNumber}`);
+      URL.revokeObjectURL(url);
+    };
+    img.src = url;
+  };
 
   return (
     <div
@@ -363,7 +400,7 @@ export function CommitCard({
           />
           <span
             style={{
-              fontFamily: "Lastik, Lastic, serif",
+              fontFamily: "var(--font-lastik), Lastik, Lastic, serif",
               color: TEXT_PRIMARY,
               fontSize: 15,
               fontWeight: 400,
@@ -372,17 +409,6 @@ export function CommitCard({
           >
             glyph
           </span>
-        </div>
-        {/* Commit ID */}
-        <div
-          style={{
-            fontFamily: "Lastik, Lastic, serif",
-            color: TEXT_DIM,
-            fontSize: 9.5,
-            letterSpacing: "0.22em",
-          }}
-        >
-          {`MC — ${commitNumber.toString().padStart(4, "0")}`}
         </div>
       </div>
 
@@ -401,7 +427,7 @@ export function CommitCard({
       <div style={{ padding: "6px 24px 0" }}>
         <h2
           style={{
-            fontFamily: "Lastik, Lastic, serif",
+            fontFamily: "var(--font-lastik), Lastik, Lastic, serif",
             color: TEXT_PRIMARY,
             fontSize: "clamp(26px, 7.5vw, 36px)",
             fontWeight: 400,
@@ -414,7 +440,7 @@ export function CommitCard({
         </h2>
         <p
           style={{
-            fontFamily: "Lastik, Lastic, serif",
+            fontFamily: "var(--font-lastik), Lastik, Lastic, serif",
             color: TEXT_SECONDARY,
             fontSize: 11,
             margin: "5px 0 0",
@@ -452,7 +478,7 @@ export function CommitCard({
           <div key={label}>
             <div
               style={{
-                fontFamily: "Lastik, Lastic, serif",
+                fontFamily: "var(--font-lastik), Lastik, Lastic, serif",
                 color: TEXT_PRIMARY,
                 fontSize: "clamp(16px, 5vw, 20px)",
                 fontWeight: 400,
@@ -464,7 +490,7 @@ export function CommitCard({
             </div>
             <div
               style={{
-                fontFamily: "Lastik, Lastic, serif",
+                fontFamily: "var(--font-lastik), Lastik, Lastic, serif",
                 color: TEXT_DIM,
                 fontSize: 9,
                 letterSpacing: "0.15em",
@@ -493,7 +519,7 @@ export function CommitCard({
       >
         <span
           style={{
-            fontFamily: "Lastik, Lastic, serif",
+            fontFamily: "var(--font-lastik), Lastik, Lastic, serif",
             color: MOSS_GREEN,
             fontSize: 10.5,
             letterSpacing: "0.04em",
@@ -506,7 +532,7 @@ export function CommitCard({
         />
         <span
           style={{
-            fontFamily: "Lastik, Lastic, serif",
+            fontFamily: "var(--font-lastik), Lastik, Lastic, serif",
             color: TEXT_SECONDARY,
             fontSize: 10.5,
           }}
@@ -518,7 +544,7 @@ export function CommitCard({
         />
         <span
           style={{
-            fontFamily: "Lastik, Lastic, serif",
+            fontFamily: "var(--font-lastik), Lastik, Lastic, serif",
             color: ROSY_BROWN,
             fontSize: 10.5,
           }}
@@ -527,53 +553,20 @@ export function CommitCard({
         </span>
       </div>
 
-      {/* ─ SHA hash strip ────────────────────────────────────────────────── */}
-      <div
-        style={{
-          margin: "0 24px 14px",
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-        }}
-      >
-        <div
-          style={{
-            flex: 1,
-            height: 1,
-            background: BORDER_COLOR,
-          }}
-        />
-        <span
-          style={{
-            fontFamily: "Lastik, Lastic, serif",
-            color: TEXT_DIM,
-            fontSize: 9,
-            letterSpacing: "0.12em",
-          }}
-        >
-          {`sha: ${seed.substring(0, 12)}`}
-        </span>
-        <div
-          style={{
-            flex: 1,
-            height: 1,
-            background: BORDER_COLOR,
-          }}
-        />
-      </div>
-
       {/* ─ Footer ────────────────────────────────────────────────────────── */}
       <div
         style={{
-          padding: "0 24px 22px",
+          padding: "14px 24px 22px",
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
+          borderTop: `1px solid ${BORDER_COLOR}`,
+          marginTop: 15,
         }}
       >
         <span
           style={{
-            fontFamily: "Lastik, Lastic, serif",
+            fontFamily: "var(--font-lastik), Lastik, Lastic, serif",
             color: DARK_GREEN,
             fontSize: 10.5,
             letterSpacing: "0.04em",
@@ -581,26 +574,70 @@ export function CommitCard({
         >
           Commit to touching grass.
         </span>
-        <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-          <span
+        
+        {/* Actions inside the bottom right corner of the card */}
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <button
+            onClick={handleCopyLink}
+            title={copied ? "Copied!" : "Copy Share Link"}
             style={{
-              width: 5.5,
-              height: 5.5,
-              borderRadius: "50%",
-              background: MOSS_GREEN,
-              display: "block",
-            }}
-          />
-          <span
-            style={{
-              fontFamily: "Lastik, Lastic, serif",
-              color: TEXT_DIM,
-              fontSize: 10,
-              fontWeight: 400,
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              color: copied ? MOSS_GREEN : TEXT_SECONDARY,
+              padding: 4,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              transition: "color 0.2s"
             }}
           >
-            glyph
-          </span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 14, height: 14 }}>
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+            </svg>
+          </button>
+          
+          <button
+            onClick={handleDownloadPNG}
+            title="Download PNG Image"
+            style={{
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              color: TEXT_SECONDARY,
+              padding: 4,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center"
+            }}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 14, height: 14 }}>
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+          </button>
+
+          <button
+            onClick={() => alert("GitHub Mandala Commit is only available when you scan the QR code and commit from your mobile device.")}
+            title="Commit to GitHub"
+            style={{
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              color: TEXT_SECONDARY,
+              padding: 4,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center"
+            }}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 14, height: 14 }}>
+              <path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4" />
+              <path d="M9 18c-4.51 2-5-2-7-2" />
+            </svg>
+          </button>
         </div>
       </div>
     </div>
