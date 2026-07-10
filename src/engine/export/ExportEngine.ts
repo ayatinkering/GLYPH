@@ -71,8 +71,16 @@ export class ExportEngine {
       return path;
     };
 
+    const customPalette = {
+      background: "#F7F4D5",     // Beige
+      accent: "#0A3323",         // Dark green
+      secondary: "#839958",      // Moss green
+      rosyBrown: "#D3968C",      // Rosy brown
+      midnightGreen: "#105666"   // Midnight green
+    };
+
     let svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" width="100%" height="100%">\n`;
-    svg += `  <rect width="${size}" height="${size}" fill="${palette.background}" />\n`;
+    svg += `  <rect width="${size}" height="${size}" fill="${customPalette.background}" />\n`;
 
     // Rotation transform
     const rotationDeg = (geomState.rotation * 180) / Math.PI;
@@ -83,11 +91,11 @@ export class ExportEngine {
       const a = (i / 24) * Math.PI * 2;
       const x2 = R * 1.16 * Math.cos(a);
       const y2 = R * 1.16 * Math.sin(a);
-      svg += `    <line x1="0" y1="0" x2="${x2.toFixed(2)}" y2="${y2.toFixed(2)}" stroke="${palette.secondary}" stroke-width="0.5" opacity="0.10" />\n`;
+      svg += `    <line x1="0" y1="0" x2="${x2.toFixed(2)}" y2="${y2.toFixed(2)}" stroke="${customPalette.secondary}" stroke-width="0.6" opacity="0.12" />\n`;
     }
 
     // ── 2. Outer boundary circle ───────────────────────────────────────
-    svg += `    <circle cx="0" cy="0" r="${(R * 1.09).toFixed(2)}" fill="none" stroke="${palette.secondary}" stroke-width="0.95" opacity="0.18" />\n`;
+    svg += `    <circle cx="0" cy="0" r="${(R * 1.09).toFixed(2)}" fill="none" stroke="${customPalette.secondary}" stroke-width="0.95" opacity="0.28" />\n`;
 
     // ── 3. Instrument tick marks (72 ticks) ─────────────────────────────
     for (let i = 0; i < 72; i++) {
@@ -102,30 +110,30 @@ export class ExportEngine {
       const x2 = r2 * Math.cos(a);
       const y2 = r2 * Math.sin(a);
       
-      const opacity = major ? "0.55" : semi ? "0.3" : "0.12";
+      const opacity = major ? "0.7" : semi ? "0.4" : "0.18";
       const strokeW = major ? "1.25" : semi ? "0.8" : "0.5";
-      svg += `    <line x1="${x1.toFixed(2)}" y1="${y1.toFixed(2)}" x2="${x2.toFixed(2)}" y2="${y2.toFixed(2)}" stroke="${palette.secondary}" stroke-width="${strokeW}" opacity="${opacity}" />\n`;
+      svg += `    <line x1="${x1.toFixed(2)}" y1="${y1.toFixed(2)}" x2="${x2.toFixed(2)}" y2="${y2.toFixed(2)}" stroke="${customPalette.accent}" stroke-width="${strokeW}" opacity="${opacity}" />\n`;
     }
 
     // ── 4. Golden-ratio concentric circles (8 circles) ──────────────────
     for (let i = 0; i <= 8; i++) {
       const r = R * Math.pow(1 / PHI, i);
-      const opacity = (0.06 + (8 - i) * 0.035).toFixed(3);
-      svg += `    <circle cx="0" cy="0" r="${r.toFixed(2)}" fill="none" stroke="${palette.accent}" stroke-width="0.8" opacity="${opacity}" />\n`;
+      const opacity = (0.08 + (8 - i) * 0.038).toFixed(3);
+      svg += `    <circle cx="0" cy="0" r="${r.toFixed(2)}" fill="none" stroke="${customPalette.midnightGreen}" stroke-width="0.8" opacity="${opacity}" />\n`;
     }
 
     // ── 5. Polar rose layers ───────────────────────────────────────────
-    svg += `    <path d="${getRosePath(R, 13/6, 6)}" fill="none" stroke="${palette.secondary}" stroke-width="0.9" opacity="0.32" />\n`;
-    svg += `    <path d="${getRosePath(R * 0.875, 7/4, 4)}" fill="none" stroke="${palette.accent}" stroke-width="0.9" opacity="0.40" />\n`;
-    svg += `    <path d="${getRosePath(R * 0.755, 5/3, 3)}" fill="none" stroke="${palette.secondary}" stroke-width="1.0" opacity="0.52" />\n`;
-    svg += `    <path d="${getRosePath(R * 0.62, 3/2, 2)}" fill="none" stroke="${palette.accent}" stroke-width="1.15" opacity="0.64" />\n`;
-    svg += `    <path d="${getRosePath(R * 0.465, 5, 1)}" fill="none" stroke="${palette.secondary}" stroke-width="1.25" opacity="0.76" />\n`;
-    svg += `    <path d="${getRosePath(R * 0.30, 3, 1)}" fill="none" stroke="${palette.accent}" stroke-width="1.35" opacity="0.85" />\n`;
-    svg += `    <path d="${getRosePath(R * 0.17, 2, 1)}" fill="none" stroke="${palette.secondary}" stroke-width="1.5" opacity="0.92" />\n`;
+    svg += `    <path d="${getRosePath(R, 13/6, 6)}" fill="none" stroke="${customPalette.midnightGreen}" stroke-width="0.9" opacity="0.32" />\n`;
+    svg += `    <path d="${getRosePath(R * 0.875, 7/4, 4)}" fill="none" stroke="${customPalette.secondary}" stroke-width="0.9" opacity="0.40" />\n`;
+    svg += `    <path d="${getRosePath(R * 0.755, 5/3, 3)}" fill="none" stroke="${customPalette.rosyBrown}" stroke-width="1.0" opacity="0.52" />\n`;
+    svg += `    <path d="${getRosePath(R * 0.62, 3/2, 2)}" fill="none" stroke="${customPalette.midnightGreen}" stroke-width="1.15" opacity="0.64" />\n`;
+    svg += `    <path d="${getRosePath(R * 0.465, 5, 1)}" fill="none" stroke="${customPalette.secondary}" stroke-width="1.25" opacity="0.76" />\n`;
+    svg += `    <path d="${getRosePath(R * 0.30, 3, 1)}" fill="none" stroke="${customPalette.rosyBrown}" stroke-width="1.35" opacity="0.85" />\n`;
+    svg += `    <path d="${getRosePath(R * 0.17, 2, 1)}" fill="none" stroke="${customPalette.accent}" stroke-width="1.5" opacity="0.92" />\n`;
 
     // ── 6. Spirographs (Epitrochoid & Hypocycloid) ──────────────────────
-    svg += `    <path d="${getEpitrochoidPath(R * 0.68, R * 0.68 / 6, R * 0.68 / 6 * 1.12)}" fill="none" stroke="${palette.accent}" stroke-width="0.85" opacity="0.30" />\n`;
-    svg += `    <path d="${getHypocycloidPath(R * 0.52, R * 0.52 / 7, R * 0.52 / 7 * 0.85)}" fill="none" stroke="${palette.secondary}" stroke-width="0.8" opacity="0.25" />\n`;
+    svg += `    <path d="${getEpitrochoidPath(R * 0.68, R * 0.68 / 6, R * 0.68 / 6 * 1.12)}" fill="none" stroke="${customPalette.rosyBrown}" stroke-width="0.85" opacity="0.30" />\n`;
+    svg += `    <path d="${getHypocycloidPath(R * 0.52, R * 0.52 / 7, R * 0.52 / 7 * 0.85)}" fill="none" stroke="${customPalette.midnightGreen}" stroke-width="0.8" opacity="0.25" />\n`;
 
     // ── 7. Fibonacci phyllotaxis constellation ─────────────────────────
     const dotR = R * 0.35;
@@ -135,16 +143,16 @@ export class ExportEngine {
       const x = r * Math.cos(theta);
       const y = r * Math.sin(theta);
       const t = i / 233;
-      const radiusVal = (0.36 + t * 0.66).toFixed(2);
-      const opacity = (0.09 + t * 0.38).toFixed(3);
-      svg += `    <circle cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" r="${radiusVal}" fill="${palette.accent}" opacity="${opacity}" />\n`;
+      const radiusVal = (0.45 + t * 0.95).toFixed(2);
+      const opacity = (0.12 + t * 0.48).toFixed(3);
+      svg += `    <circle cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" r="${radiusVal}" fill="${customPalette.accent}" opacity="${opacity}" />\n`;
     }
 
     // ── 8. Centre ornamental rings ─────────────────────────────────────
-    svg += `    <circle cx="0" cy="0" r="12" fill="none" stroke="${palette.accent}" stroke-width="0.5" opacity="0.16" />\n`;
-    svg += `    <circle cx="0" cy="0" r="8" fill="none" stroke="${palette.accent}" stroke-width="0.5" opacity="0.26" />\n`;
-    svg += `    <circle cx="0" cy="0" r="5" fill="none" stroke="${palette.accent}" stroke-width="0.5" opacity="0.40" />\n`;
-    svg += `    <circle cx="0" cy="0" r="2" fill="${palette.secondary}" />\n`;
+    svg += `    <circle cx="0" cy="0" r="12" fill="none" stroke="${customPalette.accent}" stroke-width="0.8" opacity="0.25" />\n`;
+    svg += `    <circle cx="0" cy="0" r="8" fill="none" stroke="${customPalette.accent}" stroke-width="0.8" opacity="0.40" />\n`;
+    svg += `    <circle cx="0" cy="0" r="5" fill="none" stroke="${customPalette.accent}" stroke-width="0.8" opacity="0.55" />\n`;
+    svg += `    <circle cx="0" cy="0" r="2.8" fill="${customPalette.rosyBrown}" />\n`;
 
     svg += `  </g>\n`;
     svg += `</svg>`;
