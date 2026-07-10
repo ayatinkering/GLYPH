@@ -129,7 +129,7 @@ export class ExportEngine {
     let svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${height}" width="${size}" height="${height}">\n`;
     svg += `  <defs>\n`;
     svg += `    <pattern id="dot-grid" x="0" y="0" width="22" height="22" patternUnits="userSpaceOnUse">\n`;
-    svg += `      <circle cx="1" cy="1" r="1" fill="${hexToRgba(DARK_GREEN, 0.04)}" />\n`;
+    svg += `      <circle cx="1" cy="1" r="1" fill="${hexToRgba(DARK_GREEN, 0.08)}" />\n`;
     svg += `    </pattern>\n`;
     svg += `    <style type="text/css">\n`;
     svg += `      @font-face {\n`;

@@ -12,7 +12,7 @@ const GOLDEN_ANGLE = 2 * Math.PI * (2 - PHI);
 // Palette values matching the user's exact requirements:
 const DARK_GREEN = "#0A3323";
 const MOSS_GREEN = "#839958";
-const BEIGE = "#F7F4D5";
+const BEIGE = "#FAF8E7";
 const ROSY_BROWN = "#D3968C";
 const MIDNIGHT_GREEN = "#105666";
 const SOFT_PINK = "#E2959D";
@@ -309,7 +309,7 @@ export function CommitCard({
   const TEXT_SECONDARY = MIDNIGHT_GREEN;
   const BORDER_COLOR = "rgba(10, 51, 35, 0.12)";
   const TEXT_DIM = "rgba(16, 86, 102, 0.65)";
-  const DOT_GRID_COLOR = "rgba(10, 51, 35, 0.04)";
+  const DOT_GRID_COLOR = "rgba(10, 51, 35, 0.08)";
 
   const formatWalkTitle = (period: string) => {
     switch (period.toLowerCase()) {
@@ -616,7 +616,7 @@ export function CommitCard({
               bottom: "48px",
               right: "24px",
               width: "280px",
-              background: "#F7F4D5",
+              background: "#F5F5F3",
               border: `1px solid ${BORDER_COLOR}`,
               borderRadius: "18px",
               padding: "12px 14px",
@@ -764,7 +764,7 @@ export function CommitCard({
               bottom: "48px",
               right: "24px",
               width: "220px",
-              background: "#F7F4D5",
+              background: "#F5F5F3",
               border: `1px solid ${BORDER_COLOR}`,
               borderRadius: "14px",
               padding: "10px 12px",
